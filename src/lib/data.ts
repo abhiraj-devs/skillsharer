@@ -1,3 +1,4 @@
+
 export type User = {
   name: string;
   avatar: string;
@@ -76,6 +77,7 @@ const users = {
   user1: { name: 'Ben Carter', avatar: 'https://picsum.photos/seed/ben/100' },
   user2: { name: 'Chloe Davis', avatar: 'https://picsum.photos/seed/chloe/100' },
   user3: { name: 'David Evans', avatar: 'https://picsum.photos/seed/david/100' },
+  user4: { name: 'Sarah Lee', avatar: 'https://picsum.photos/seed/sarah/100' },
 };
 
 export const servicesData: Service[] = [
@@ -114,6 +116,15 @@ export const servicesData: Service[] = [
     rating: 4.7,
     imageUrl: 'https://picsum.photos/seed/logo/600/400',
     user: users.user1,
+  },
+  {
+    id: 5,
+    title: 'I will translate your document from English to Spanish',
+    category: 'Translation',
+    price: 80,
+    rating: 4.9,
+    imageUrl: 'https://picsum.photos/seed/translation/600/400',
+    user: users.user4,
   },
 ];
 
@@ -158,6 +169,7 @@ export const userProfile: UserProfile = {
     { id: 1, user: users.user1, rating: 5, comment: 'Amazing work! Delivered a fantastic design ahead of schedule.' },
     { id: 2, user: users.user2, rating: 5, comment: 'Super helpful and patient. Found the bug that I was stuck on for hours.' },
     { id: 3, user: users.user3, rating: 4, comment: 'Good writing, but took a bit longer than expected.' },
+    { id: 4, user: users.user4, rating: 5, comment: 'Very professional and a pleasure to work with.' },
   ],
 };
 
@@ -195,6 +207,16 @@ export const conversationsData: Conversation[] = [
     messages: [
       {id: 1, text: 'The blog post is live. Thanks for your work!', isSender: false, timestamp: '3d ago'},
       {id: 2, text: 'Thanks for the feedback!', isSender: true, timestamp: '3d ago'},
+    ],
+  },
+  {
+    id: 4,
+    user: users.user4,
+    lastMessage: 'You are welcome!',
+    lastMessageTime: '4d ago',
+    messages: [
+      {id: 1, text: 'Thanks for the quick translation!', isSender: false, timestamp: '4d ago'},
+      {id: 2, text: 'You are welcome!', isSender: true, timestamp: '4d ago'},
     ],
   },
 ];
