@@ -25,6 +25,7 @@ import * as z from 'zod';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ServiceCard } from '@/components/service-card';
+import Link from 'next/link';
 
 type Review = {
   id: string;
@@ -333,6 +334,19 @@ export default function ProfilePage() {
               )}
             </CardContent>
           </Card>
+           <Card>
+            <CardHeader>
+                <CardTitle className="font-headline text-lg">Credits</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm text-muted-foreground">
+                    This application was created by Abhiraj. For any inquiries, please contact:
+                    <a href="mailto:abhirajcsecec@gmail.com" className="text-primary underline ml-1">
+                        abhirajcsecec@gmail.com
+                    </a>
+                </p>
+            </CardContent>
+           </Card>
         </div>
 
         <div className="lg:col-span-2 space-y-8">

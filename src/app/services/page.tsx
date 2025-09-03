@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { ServiceCard } from '@/components/service-card';
@@ -88,9 +89,21 @@ export default function ServicesPage() {
       title: '',
       category: '',
       price: 0,
-      imageUrl: 'https://picsum.photos/600/400',
+      imageUrl: '',
     },
   });
+  
+  useEffect(() => {
+    if (open) {
+      // Reset form with a new random image URL each time the dialog opens
+      form.reset({
+          title: '',
+          category: '',
+          price: 0,
+          imageUrl: `https://picsum.photos/600/400?random=${Math.random()}`,
+      });
+    }
+  }, [open, form]);
 
   const onSubmit = async (values: z.infer<typeof serviceFormSchema>) => {
     if (!user) {
@@ -118,7 +131,6 @@ export default function ServicesPage() {
       }
       const newService = await response.json();
       setServices((prev) => [newService, ...prev]);
-      form.reset();
       setOpen(false);
        toast({
         title: 'Success!',
