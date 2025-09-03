@@ -17,20 +17,83 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { dashboardData } from '@/lib/data';
+import { dashboardData as staticDashboardData, userProfile } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import {
   Activity,
   DollarSign,
   Star,
-  TrendingUp,
   ListChecks,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useEffect, useState, useCallback } from 'react';
+import { useToast } from '@/hooks/use-toast';
+
+type DashboardData = {
+  totalEarnings: number;
+  completedTasks: number;
+  activeTasks: number;
+  averageRating: number;
+  totalReviews: number;
+  performance: { month: string; earnings: number; tasks: number }[];
+};
+
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDashboardData = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        setLoading(false);
+        return;
+    };
+    try {
+        const response = await fetch('/api/dashboard', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            throw new Error('Failed to fetch dashboard data');
+        }
+        const dashboardData = await response.json();
+        setData(dashboardData);
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: error.message || 'Could not load dashboard data.'
+        });
+    } finally {
+        setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  if (loading) {
+    return (
+      <div className="flex h-[calc(100vh-8rem)] w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const displayData = data || {
+    totalEarnings: 0,
+    completedTasks: 0,
+    activeTasks: 0,
+    averageRating: 0,
+    totalReviews: 0,
+    performance: staticDashboardData.performance,
+  };
+
+
   return (
     <div className="flex flex-col gap-8">
       <header>
@@ -47,26 +110,26 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₹{dashboardData.stats.totalEarnings.toLocaleString()}
+              ₹{displayData.totalEarnings.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              + {dashboardData.stats.earningsThisMonth}% from last month
+              Based on your offered services
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Completed Tasks
+              Services Offered
             </CardTitle>
             <ListChecks className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {dashboardData.stats.completedTasks}
+              {displayData.completedTasks}
             </div>
             <p className="text-xs text-muted-foreground">
-              {dashboardData.stats.ongoingTasks} tasks ongoing
+              Total services you have posted
             </p>
           </CardContent>
         </Card>
@@ -77,24 +140,24 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {dashboardData.stats.averageRating.toFixed(1)}
+              {displayData.averageRating.toFixed(1)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Based on {dashboardData.stats.totalReviews} reviews
+              Based on {displayData.totalReviews} reviews (static)
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Tasks</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Requests</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {dashboardData.stats.ongoingTasks}
+              {displayData.activeTasks}
             </div>
             <p className="text-xs text-muted-foreground">
-              Your active service offers and requests
+              Your active requests for help
             </p>
           </CardContent>
         </Card>
@@ -105,12 +168,12 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="font-headline">Monthly Performance</CardTitle>
             <CardDescription>
-              Your earnings and completed tasks over the past 6 months.
+              Your earnings and completed tasks over the past 6 months (static).
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[350px] w-full p-2">
             <ResponsiveContainer>
-              <BarChart data={dashboardData.performance}>
+              <BarChart data={displayData.performance}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
                 <YAxis
@@ -158,20 +221,20 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="font-headline">Recent Reviews</CardTitle>
             <CardDescription>
-              What people are saying about your work.
+              What people are saying about your work (static).
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-4">
-              {dashboardData.recentReviews.map((review) => (
+              {userProfile.reviews.map((review) => (
                 <li key={review.id} className="flex items-start gap-4">
                   <Avatar>
-                    <AvatarImage src={review.avatar} alt={review.name} />
-                    <AvatarFallback>{review.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={review.user.avatar} alt={review.user.name} />
+                    <AvatarFallback>{review.user.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="font-semibold">{review.name}</p>
+                      <p className="font-semibold">{review.user.name}</p>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Star className="h-4 w-4 fill-accent text-accent" />
                         <span>{review.rating.toFixed(1)}</span>

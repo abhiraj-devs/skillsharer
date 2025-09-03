@@ -11,13 +11,43 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 type ServiceCardProps = {
   service: Service;
 };
 
 export function ServiceCard({ service }: ServiceCardProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const startConversation = async () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to contact a seller.' });
+        return;
+    }
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/conversations/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ recipientId: service.user.id })
+        });
+        if (!res.ok) throw new Error('Failed to start conversation');
+        const { conversationId } = await res.json();
+        router.push(`/messages?c=${conversationId}`);
+    } catch (error) {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not start conversation.' });
+    }
+  };
+  
   return (
     <Card className="flex flex-col overflow-hidden">
       <div className="relative h-48 w-full">
@@ -69,11 +99,11 @@ export function ServiceCard({ service }: ServiceCardProps) {
           ₹{service.price.toLocaleString()}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/messages">Exchange</Link>
+          <Button variant="outline" size="sm" onClick={startConversation} disabled={user?.id === service.user.id}>
+            Exchange
           </Button>
-          <Button size="sm" asChild>
-            <Link href="/messages">Buy</Link>
+          <Button size="sm" onClick={startConversation} disabled={user?.id === service.user.id}>
+            Buy
           </Button>
         </div>
       </CardFooter>

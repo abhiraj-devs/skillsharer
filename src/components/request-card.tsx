@@ -11,13 +11,44 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 type RequestCardProps = {
   request: Request;
 };
 
 export function RequestCard({ request }: RequestCardProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const handleOfferHelp = async () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to offer help.' });
+        return;
+    }
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/conversations/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ recipientId: request.user.id })
+        });
+        if (!res.ok) throw new Error('Failed to start conversation');
+        const { conversationId } = await res.json();
+        router.push(`/messages?c=${conversationId}`);
+    } catch (error) {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not start conversation.' });
+    }
+  };
+
+
   return (
     <Card className="flex flex-col">
       <CardHeader>
@@ -50,8 +81,8 @@ export function RequestCard({ request }: RequestCardProps) {
         <div className="text-sm font-semibold text-primary">
           Budget: ₹{request.budget.toLocaleString()}
         </div>
-        <Button asChild>
-          <Link href="/messages">Offer Help</Link>
+        <Button onClick={handleOfferHelp} disabled={user?.id === request.user.id}>
+            Offer Help
         </Button>
       </CardFooter>
     </Card>

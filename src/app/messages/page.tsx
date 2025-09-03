@@ -1,6 +1,7 @@
 
 'use client';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { Conversation, Message, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function MessagesPage() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -38,7 +40,11 @@ export default function MessagesPage() {
       if (!res.ok) throw new Error('Failed to fetch conversations');
       const data = await res.json();
       setConversations(data);
-      if (data.length > 0 && !selectedConversationId) {
+
+      const conversationIdFromUrl = searchParams.get('c');
+      if (conversationIdFromUrl) {
+          setSelectedConversationId(conversationIdFromUrl);
+      } else if (data.length > 0 && !selectedConversationId) {
         setSelectedConversationId(data[0].id);
       }
     } catch (error) {
@@ -47,7 +53,7 @@ export default function MessagesPage() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, toast, selectedConversationId]);
+  }, [isAuthenticated, toast, selectedConversationId, searchParams]);
 
 
   useEffect(() => {
@@ -168,7 +174,7 @@ export default function MessagesPage() {
                           </p>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">
-                          {lastMessage?.text}
+                         {lastMessage ? (isSender ? `You: ${lastMessage.text}` : lastMessage.text) : 'No messages yet'}
                         </p>
                       </div>
                     </button>
@@ -265,10 +271,14 @@ export default function MessagesPage() {
               </CardFooter>
             </>
           ) : (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-muted-foreground">
-                Select a conversation to start chatting
-              </p>
+             <div className="flex h-full items-center justify-center">
+              <div className="text-center">
+                <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-2 text-sm font-medium text-foreground">No conversation selected</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Select a conversation from the list or start a new one from a service or request page.
+                </p>
+              </div>
             </div>
           )}
         </Card>
