@@ -9,33 +9,38 @@ import UserModel from '@/models/User';
 // GET all requests
 export async function GET() {
     await dbConnect();
-    const requests = await RequestModel.find({})
-        .populate({ path: 'user', model: UserModel, select: 'name avatar' })
-        .populate({ path: 'solver', model: UserModel, select: 'name avatar' })
-        .sort({ createdAt: -1 });
+    try {
+        const requests = await RequestModel.find({})
+            .populate({ path: 'user', model: UserModel, select: 'name avatar' })
+            .populate({ path: 'solver', model: UserModel, select: 'name avatar' })
+            .sort({ createdAt: -1 });
 
-    const formattedRequests = requests
-      .filter(request => request.user) // Filter out requests with null users
-      .map(request => ({
-        id: request._id.toString(),
-        title: request.title,
-        description: request.description,
-        budget: request.budget,
-        tags: request.tags,
-        status: request.status,
-        user: {
-            id: request.user._id.toString(),
-            name: request.user.name,
-            avatar: request.user.avatar,
-        },
-        solver: request.solver ? {
-            id: (request.solver as any)._id.toString(),
-            name: (request.solver as any).name,
-            avatar: (request.solver as any).avatar,
-        } : undefined,
-    }));
+        const formattedRequests = requests
+          .filter(request => request.user) // Filter out requests with null users
+          .map(request => ({
+            id: request._id.toString(),
+            title: request.title,
+            description: request.description,
+            budget: request.budget,
+            tags: request.tags,
+            status: request.status,
+            user: {
+                id: request.user._id.toString(),
+                name: request.user.name,
+                avatar: request.user.avatar,
+            },
+            solver: request.solver ? {
+                id: (request.solver as any)._id.toString(),
+                name: (request.solver as any).name,
+                avatar: (request.solver as any).avatar,
+            } : undefined,
+        }));
 
-    return NextResponse.json(formattedRequests);
+        return NextResponse.json(formattedRequests);
+    } catch (error) {
+        console.error('Error fetching requests:', error);
+        return NextResponse.json({ message: 'An unexpected error occurred while fetching requests.' }, { status: 500 });
+    }
 }
 
 // POST a new request
