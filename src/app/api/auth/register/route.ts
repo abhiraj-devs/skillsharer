@@ -10,12 +10,12 @@ import UserModel from '@/models/User';
 export async function POST(request: Request) {
   try {
     await dbConnect();
-    const { email, password, name, skills } = await request.json();
+    const { email, password } = await request.json();
     const secret = process.env.JWT_SECRET;
 
-    if (!email || !password || !name) {
+    if (!email || !password) {
       return NextResponse.json(
-        { message: 'Email, password, and name are required' },
+        { message: 'Email and password are required' },
         { status: 400 }
       );
     }
@@ -33,12 +33,15 @@ export async function POST(request: Request) {
     }
     
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Default name from email
+    const name = email.split('@')[0];
 
     const userToSave = new UserModel({
       email,
       password: hashedPassword,
-      name,
-      skills: skills ? skills.split(',').map((s: string) => s.trim()) : [],
+      name: name,
+      skills: [],
     });
 
     const newUser = await userToSave.save();

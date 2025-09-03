@@ -34,16 +34,14 @@ export async function login(
 
 export async function register(
   email: string,
-  password: string,
-  name: string,
-  skills: string
+  password: string
 ): Promise<User> {
   const response = await fetch('/api/auth/register', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, password, name, skills }),
+    body: JSON.stringify({ email, password }),
   });
 
   const data = await response.json();
@@ -106,7 +104,6 @@ export async function updateUser(userData: Partial<User>): Promise<User> {
   const data = await response.json();
 
   if (!response.ok) {
-    console.error('Update failed:', data.message);
     throw new Error(data.message || 'Failed to update user');
   }
 

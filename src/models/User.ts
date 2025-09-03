@@ -10,7 +10,7 @@ export interface IUser extends Document {
 }
 
 const UserSchema: Schema<IUser> = new Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: false },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true, select: false },
   skills: { type: [String], default: [] },
@@ -21,6 +21,9 @@ const UserSchema: Schema<IUser> = new Schema({
 UserSchema.pre<IUser>('save', function (next) {
     if (!this.avatar) {
         this.avatar = `https://avatar.vercel.sh/${this.email}`;
+    }
+    if (!this.name) {
+        this.name = this.email.split('@')[0];
     }
     next();
 });

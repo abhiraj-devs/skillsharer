@@ -17,7 +17,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { Textarea } from '@/components/ui/textarea';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" {...props}>
@@ -44,8 +43,6 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
-  const [skills, setSkills] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -81,12 +78,12 @@ export default function AuthPage() {
     }
 
     try {
-      await register(email, password, name, skills);
+      await register(email, password);
        toast({
         title: 'Registration Successful',
-        description: 'You have been logged in.',
+        description: 'You have been logged in. You can now update your profile.',
       });
-      const callbackUrl = searchParams.get('callbackUrl') || '/';
+      const callbackUrl = searchParams.get('callbackUrl') || '/profile';
       router.push(callbackUrl);
     } catch (error: any) {
       toast({
@@ -167,17 +164,6 @@ export default function AuthPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name-register">Full Name</Label>
-                <Input
-                  id="name-register"
-                  type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="email-register">Email</Label>
                 <Input
                   id="email-register"
@@ -207,17 +193,6 @@ export default function AuthPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={loading}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="skills-register">Skills</Label>
-                 <Textarea
-                    id="skills-register"
-                    placeholder="Enter skills, separated by commas"
-                    value={skills}
-                    onChange={(e) => setSkills(e.target.value)}
-                    disabled={loading}
-                  />
-                  <p className="text-xs text-muted-foreground">Separate skills with commas.</p>
               </div>
             </CardContent>
             <CardFooter>
