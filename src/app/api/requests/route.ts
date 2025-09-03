@@ -18,11 +18,14 @@ export async function GET() {
         const formattedRequests = requests
           .filter(request => !!request.user) // Ensure the user exists
           .map(request => {
-            const solverData = request.solver && (request.solver as any)._id ? {
-                id: (request.solver as any)._id.toString(),
-                name: (request.solver as any).name,
-                avatar: (request.solver as any).avatar,
-            } : undefined;
+            let solverData;
+            if (request.solver && typeof request.solver === 'object' && '_id' in request.solver) {
+                solverData = {
+                    id: (request.solver as any)._id.toString(),
+                    name: (request.solver as any).name,
+                    avatar: (request.solver as any).avatar,
+                };
+            }
 
             return {
               id: request._id.toString(),
@@ -37,6 +40,7 @@ export async function GET() {
                   avatar: request.user.avatar,
               },
               solver: solverData,
+              completedAt: request.completedAt
             };
           });
 
