@@ -10,7 +10,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { userProfile, type User } from '@/lib/data';
+import { userProfile } from '@/lib/data';
 import { Edit, Save, Star, X, Loader2 } from 'lucide-react';
 import AIProfileGenerator from '@/components/ai-profile-generator';
 import { useAuth } from '@/hooks/use-auth';
@@ -23,6 +23,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 type Review = {
   id: string;
@@ -42,12 +43,17 @@ const reviewSchema = z.object({
 });
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
+
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingSkills, setIsEditingSkills] = useState(false);
+  const [isEditingBio, setIsEditingBio] = useState(false);
+
   const [name, setName] = useState(user?.name || '');
   const [skills, setSkills] = useState('');
+  const [bio, setBio] = useState(user?.bio || '');
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewStats, setReviewStats] = useState({ average: 0, count: 0 });
@@ -66,6 +72,7 @@ export default function ProfilePage() {
     if (user) {
       setName(user.name || '');
       setSkills(user.skills?.join(', ') || '');
+      setBio(user.bio || '');
       fetchReviews(user.id);
     }
   }, [user]);
@@ -127,6 +134,31 @@ export default function ProfilePage() {
       });
     }
   };
+  
+  const handleSaveBio = async () => {
+    if (!bio.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Bio cannot be empty.',
+      });
+      return;
+    }
+    try {
+      await updateUser({ bio });
+      toast({
+        title: 'Success',
+        description: 'Your bio has been updated.',
+      });
+      setIsEditingBio(false);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error.message || 'Could not update bio.',
+      });
+    }
+  }
 
   const handleReviewSubmit = async (values: z.infer<typeof reviewSchema>) => {
     if (!user) return;
@@ -147,14 +179,22 @@ export default function ProfilePage() {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
+  
+  const handleLogout = () => {
+    logout();
+    router.push('/auth');
+  }
 
   return (
     <div className="flex flex-col gap-8">
-      <header>
-        <h1 className="text-3xl font-bold font-headline">My Profile</h1>
-        <p className="text-muted-foreground">
-          Manage your skills, view your history, and grow your reputation.
-        </p>
+      <header className="flex justify-between items-center">
+        <div>
+            <h1 className="text-3xl font-bold font-headline">My Profile</h1>
+            <p className="text-muted-foreground">
+            Manage your skills, view your history, and grow your reputation.
+            </p>
+        </div>
+        <Button variant="outline" onClick={handleLogout}>Logout</Button>
       </header>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -208,7 +248,24 @@ export default function ProfilePage() {
                 </div>
               )}
               <p className="text-muted-foreground mt-2">{user?.email}</p>
-              <p className="text-muted-foreground mt-2">{userProfile.bio}</p>
+             
+              {!isEditingBio ? (
+                 <div className="relative group w-full">
+                    <p className="text-muted-foreground mt-2">{user?.bio}</p>
+                    <Button variant="ghost" size="icon" className="absolute top-0 right-0 opacity-0 group-hover:opacity-100" onClick={() => setIsEditingBio(true)}>
+                       <Edit className="h-4 w-4"/>
+                    </Button>
+                 </div>
+              ) : (
+                <div className="w-full space-y-2 mt-4">
+                    <Textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell us about yourself..."/>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => setIsEditingBio(false)}><X className="h-4 w-4"/></Button>
+                        <Button variant="ghost" size="icon" onClick={handleSaveBio}><Save className="h-4 w-4"/></Button>
+                    </div>
+                </div>
+              )}
+
             </CardContent>
           </Card>
           <Card>
@@ -329,44 +386,6 @@ export default function ProfilePage() {
                     {reviews.length === 0 && !loadingReviews && (
                         <p className="text-sm text-center text-muted-foreground py-4">No reviews yet.</p>
                     )}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Leave a Review</CardTitle>
-                        <CardDescription>Share your experience working with {user?.name}.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={reviewForm.handleSubmit(handleReviewSubmit)} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Rating</label>
-                                <Controller
-                                    name="rating"
-                                    control={reviewForm.control}
-                                    render={({ field }) => (
-                                        <div className="flex gap-1">
-                                            {[1,2,3,4,5].map(i => (
-                                                <Star 
-                                                    key={i} 
-                                                    className={cn("h-6 w-6 cursor-pointer", i <= field.value ? "text-accent fill-accent" : "text-gray-300")}
-                                                    onClick={() => field.onChange(i)}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-                                />
-                                {reviewForm.formState.errors.rating && <p className="text-destructive text-sm mt-1">{reviewForm.formState.errors.rating.message}</p>}
-                            </div>
-                            <div>
-                               <label className="block text-sm font-medium mb-2">Comment</label>
-                               <Textarea {...reviewForm.register('comment')} placeholder="Describe your experience..."/>
-                               {reviewForm.formState.errors.comment && <p className="text-destructive text-sm mt-1">{reviewForm.formState.errors.comment.message}</p>}
-                            </div>
-                            <Button type="submit" disabled={reviewForm.formState.isSubmitting}>
-                                {reviewForm.formState.isSubmitting && <Loader2 className="animate-spin mr-2"/>}
-                                Submit Review
-                            </Button>
-                        </form>
                     </CardContent>
                 </Card>
                </div>

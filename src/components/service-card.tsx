@@ -1,3 +1,4 @@
+
 import type { Service } from '@/lib/data';
 import Image from 'next/image';
 import {
@@ -14,6 +15,7 @@ import { Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import Link from 'next/link';
 
 type ServiceCardProps = {
   service: Service;
@@ -41,7 +43,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
         });
         if (!res.ok) throw new Error('Failed to start conversation');
         const { conversationId } = await res.json();
-        router.push(`/messages?c=${conversationId}`);
+        router.push(`/messages/${conversationId}`);
     } catch (error) {
         console.error(error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not start conversation.' });
@@ -73,17 +75,21 @@ export function ServiceCard({ service }: ServiceCardProps) {
           )}
         </div>
         <div className="flex items-center gap-2 pt-1">
-          <Avatar className="h-6 w-6">
-            <AvatarImage
-              src={service.user.avatar}
-              alt={service.user.name}
-              data-ai-hint="person"
-            />
-            <AvatarFallback>{service.user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-medium text-muted-foreground">
-            {service.user.name}
-          </span>
+            <Link href={`/users/${service.user.id}`}>
+              <Avatar className="h-6 w-6 cursor-pointer">
+                <AvatarImage
+                  src={service.user.avatar}
+                  alt={service.user.name}
+                  data-ai-hint="person"
+                />
+                <AvatarFallback>{service.user.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+            </Link>
+            <Link href={`/users/${service.user.id}`}>
+              <span className="text-sm font-medium text-muted-foreground cursor-pointer hover:underline">
+                {service.user.name}
+              </span>
+            </Link>
         </div>
       </CardHeader>
       <CardContent className="flex-grow">

@@ -1,10 +1,12 @@
 
+
 export interface User {
   id: string;
   name?: string | null;
   email?: string | null;
   image?: string | null;
   skills?: string[];
+  bio?: string;
 }
 
 export async function login(

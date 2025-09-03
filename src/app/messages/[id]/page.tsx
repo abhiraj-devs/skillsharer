@@ -42,6 +42,7 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
+import Link from 'next/link';
 
 
 export default function ConversationPage() {
@@ -263,20 +264,24 @@ export default function ConversationPage() {
                     <Button variant="ghost" size="icon" className="md:hidden" onClick={() => router.push('/messages')}>
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <Avatar>
-                        <AvatarImage
-                        src={otherUser.avatar}
-                        alt={otherUser.name}
-                        data-ai-hint="person"
-                        />
-                        <AvatarFallback>
-                        {otherUser.name.charAt(0)}
-                        </AvatarFallback>
-                    </Avatar>
+                    <Link href={`/users/${otherUser.id}`}>
+                        <Avatar className="cursor-pointer">
+                            <AvatarImage
+                            src={otherUser.avatar}
+                            alt={otherUser.name}
+                            data-ai-hint="person"
+                            />
+                            <AvatarFallback>
+                            {otherUser.name.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
+                    </Link>
                     <div>
-                        <CardTitle className="font-headline text-lg">
-                        {otherUser.name}
-                        </CardTitle>
+                        <Link href={`/users/${otherUser.id}`}>
+                            <CardTitle className="font-headline text-lg cursor-pointer hover:underline">
+                            {otherUser.name}
+                            </CardTitle>
+                        </Link>
                         <p className="text-sm text-muted-foreground">{formatLastSeen(otherUser.lastSeen)}</p>
                     </div>
                 </div>
@@ -296,10 +301,12 @@ export default function ConversationPage() {
                             )}
                         >
                             {!isSender && (
-                                <Avatar className="h-8 w-8 self-end">
-                                    <AvatarImage src={messageUser?.avatar} alt={messageUser?.name} />
-                                    <AvatarFallback>{messageUser?.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
+                                <Link href={`/users/${messageUser?.id}`}>
+                                    <Avatar className="h-8 w-8 self-end cursor-pointer">
+                                        <AvatarImage src={messageUser?.avatar} alt={messageUser?.name} />
+                                        <AvatarFallback>{messageUser?.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                </Link>
                             )}
 
                             <div

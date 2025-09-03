@@ -5,8 +5,12 @@
 
 export type User = {
   id: string;
+  _id: string;
   name: string;
   avatar: string;
+  email: string;
+  bio: string;
+  skills: string[];
   lastSeen?: string;
 };
 

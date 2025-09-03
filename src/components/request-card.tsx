@@ -56,6 +56,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import Link from 'next/link';
 
 const requestFormSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters long.'),
@@ -108,7 +109,7 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
         });
         if (!res.ok) throw new Error('Failed to start conversation');
         const { conversationId } = await res.json();
-        router.push(`/messages?c=${conversationId}`);
+        router.push(`/messages/${conversationId}`);
     } catch (error) {
         console.error(error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not start conversation.' });
@@ -226,15 +227,19 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
             )}
         </div>
         <div className="flex items-center gap-2 pt-2">
-          <Avatar className="h-6 w-6">
-            <AvatarImage
-              src={request.user.avatar}
-              alt={request.user.name}
-              data-ai-hint="person"
-            />
-            <AvatarFallback>{request.user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-medium">{request.user.name}</span>
+            <Link href={`/users/${request.user.id}`}>
+                <Avatar className="h-6 w-6 cursor-pointer">
+                    <AvatarImage
+                    src={request.user.avatar}
+                    alt={request.user.name}
+                    data-ai-hint="person"
+                    />
+                    <AvatarFallback>{request.user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+            </Link>
+             <Link href={`/users/${request.user.id}`}>
+                <span className="text-sm font-medium cursor-pointer hover:underline">{request.user.name}</span>
+            </Link>
         </div>
       </CardHeader>
       <CardContent className="flex-grow">

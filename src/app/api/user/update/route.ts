@@ -20,11 +20,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1];
-    const { name, skills } = await request.json();
+    const { name, skills, bio } = await request.json();
 
-    if (!name && !skills) {
+    if (!name && !skills && !bio) {
       return NextResponse.json(
-        { message: 'Name or skills are required' },
+        { message: 'Name, skills, or bio are required' },
         { status: 400 }
       );
     }
@@ -51,6 +51,9 @@ export async function PUT(request: NextRequest) {
     if (skills) {
       user.skills = skills;
     }
+     if (bio) {
+      user.bio = bio;
+    }
 
     await user.save();
 
@@ -59,7 +62,8 @@ export async function PUT(request: NextRequest) {
       name: user.name,
       email: user.email,
       skills: user.skills,
-      image: user.avatar
+      image: user.avatar,
+      bio: user.bio,
     };
     
     return NextResponse.json({ user: userResponse });

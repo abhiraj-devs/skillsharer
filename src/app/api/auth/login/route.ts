@@ -46,6 +46,7 @@ export async function POST(request: Request) {
         name: user.name,
         email: user.email,
         skills: user.skills,
+        bio: user.bio,
     };
 
     const token = jwt.sign(tokenPayload, secret, {
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
       email: user.email,
       skills: user.skills,
       image: user.avatar,
+      bio: user.bio,
     };
 
     return NextResponse.json({ user: userResponse, token });

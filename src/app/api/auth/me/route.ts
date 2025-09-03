@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         email: userFromDb.email,
         skills: userFromDb.skills,
         image: userFromDb.avatar,
+        bio: userFromDb.bio,
       };
 
       return NextResponse.json({ user });
