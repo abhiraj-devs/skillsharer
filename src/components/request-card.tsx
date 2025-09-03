@@ -81,6 +81,7 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
+  const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const form = useForm<z.infer<typeof requestFormSchema>>({
@@ -103,9 +104,13 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
         toast({ variant: 'destructive', title: 'Error', description: 'You cannot offer help on your own request.' });
         return;
     }
+    
+    setIsSubmittingOffer(true);
     const token = localStorage.getItem('token');
+
     try {
-        const res = await fetch('/api/conversations/start', {
+        // Step 1: Start or get the conversation
+        const startConvoRes = await fetch('/api/conversations/start', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -113,12 +118,34 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
             },
             body: JSON.stringify({ recipientId: request.user.id })
         });
-        if (!res.ok) throw new Error((await res.json()).message || 'Failed to start conversation');
-        const { conversationId } = await res.json();
+
+        if (!startConvoRes.ok) throw new Error((await startConvoRes.json()).message || 'Failed to start conversation');
+        const { conversationId } = await startConvoRes.json();
+
+        // Step 2: Send the request title as the initial message
+        const messageText = `Regarding your request: "${request.title}"`;
+        const sendMessageRes = await fetch(`/api/messages`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+              conversationId: conversationId,
+              text: messageText,
+            }),
+        });
+
+        if (!sendMessageRes.ok) throw new Error((await sendMessageRes.json()).message || 'Failed to send initial message');
+
+        // Step 3: Redirect to the conversation
         router.push(`/messages/${conversationId}`);
+
     } catch (error: any) {
         console.error(error);
         toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+        setIsSubmittingOffer(false);
     }
   };
 
@@ -268,7 +295,8 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
         <div className="text-sm font-semibold text-primary">
           Budget: ₹{request.budget.toLocaleString()}
         </div>
-        <Button onClick={handleOfferHelp} disabled={user?.id === request.user.id}>
+        <Button onClick={handleOfferHelp} disabled={user?.id === request.user.id || isSubmittingOffer}>
+            {isSubmittingOffer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Offer Help
         </Button>
       </CardFooter>
