@@ -1,7 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { RequestCard } from '@/components/request-card';
-import { requestsData, userProfile, type Request } from '@/lib/data';
+import { requestsData, type Request, type User } from '@/lib/data';
 import { PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -27,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useAuth } from '@/hooks/use-auth';
 
 const requestFormSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters long.'),
@@ -42,6 +43,8 @@ const requestFormSchema = z.object({
 export default function RequestsPage() {
   const [requests, setRequests] = useState(requestsData);
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+
   const form = useForm<z.infer<typeof requestFormSchema>>({
     resolver: zodResolver(requestFormSchema),
     defaultValues: {
@@ -53,13 +56,20 @@ export default function RequestsPage() {
   });
 
   const onSubmit = (values: z.infer<typeof requestFormSchema>) => {
+    if (!user) return; // Should not happen
+
+    const currentUser: User = {
+      name: user.name || 'User',
+      avatar: user.image || `https://avatar.vercel.sh/${user.email}`
+    };
+
     const newRequest: Request = {
       id: requests.length + 1,
       title: values.title,
       description: values.description,
       budget: values.budget,
       tags: values.tags.split(',').map((tag) => tag.trim()),
-      user: userProfile,
+      user: currentUser,
     };
     setRequests([newRequest, ...requests]);
     form.reset();

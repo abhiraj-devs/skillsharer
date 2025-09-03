@@ -1,7 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { ServiceCard } from '@/components/service-card';
-import { servicesData, userProfile, type Service } from '@/lib/data';
+import { servicesData, type Service, type User } from '@/lib/data';
 import { PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAuth } from '@/hooks/use-auth';
 
 const serviceFormSchema = z.object({
   title: z.string().min(10, 'Title must be at least 10 characters long.'),
@@ -44,6 +45,7 @@ const serviceFormSchema = z.object({
 export default function ServicesPage() {
   const [services, setServices] = useState(servicesData);
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof serviceFormSchema>>({
     resolver: zodResolver(serviceFormSchema),
@@ -56,6 +58,13 @@ export default function ServicesPage() {
   });
 
   const onSubmit = (values: z.infer<typeof serviceFormSchema>) => {
+    if (!user) return; // Should not happen if user is on this page
+
+    const currentUser: User = {
+      name: user.name || 'User',
+      avatar: user.image || `https://avatar.vercel.sh/${user.email}`
+    };
+
     const newService: Service = {
       id: services.length + 1,
       title: values.title,
@@ -63,7 +72,7 @@ export default function ServicesPage() {
       price: values.price,
       imageUrl: values.imageUrl,
       rating: 0, // New services have no rating yet
-      user: userProfile,
+      user: currentUser,
     };
     setServices([newService, ...services]);
     form.reset();

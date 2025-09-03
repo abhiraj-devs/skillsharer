@@ -27,14 +27,16 @@ import {
   TrendingUp,
   ListChecks,
 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function Dashboard() {
+  const { user } = useAuth();
   return (
     <div className="flex flex-col gap-8">
       <header>
         <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back! Here's a summary of your activity.
+          Welcome back, {user?.name}! Here's a summary of your activity.
         </p>
       </header>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">

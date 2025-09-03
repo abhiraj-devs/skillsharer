@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,6 +30,7 @@ import {
 import { Loader2, Sparkles } from 'lucide-react';
 import { userProfile } from '@/lib/data';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z.object({
   skills: z.string().min(10, 'Please list at least a few skills.'),
@@ -40,9 +41,10 @@ const formSchema = z.object({
 export default function AIProfileGenerator() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState('');
+  const { user } = useAuth();
 
   const defaultValues = {
-    skills: userProfile.skills.join(', '),
+    skills: user?.skills?.join(', ') || '',
     completedTasks: userProfile.completedTasks
       .map((task) => task.title)
       .join(', '),
@@ -53,6 +55,16 @@ export default function AIProfileGenerator() {
     resolver: zodResolver(formSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    form.reset({
+      skills: user?.skills?.join(', ') || '',
+      completedTasks: userProfile.completedTasks
+        .map((task) => task.title)
+        .join(', '),
+      reviews: userProfile.reviews.map((r) => r.comment).join('; '),
+    });
+  }, [user, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);

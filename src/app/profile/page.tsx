@@ -92,21 +92,20 @@ export default function ProfilePage() {
           <Card>
             <CardContent className="p-6 flex flex-col items-center text-center">
               <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage
-                  src={user?.image || userProfile.avatar}
-                  alt={user?.name || userProfile.name}
+                 <AvatarImage
+                  src={user?.image || `https://avatar.vercel.sh/${user?.email}`}
+                  alt={user?.name || ''}
                   data-ai-hint="person"
                 />
                 <AvatarFallback>
-                  {user?.email?.charAt(0).toUpperCase() ||
-                    userProfile.name.charAt(0)}
+                  {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
 
               {!isEditingName ? (
                 <div className="flex items-center gap-2">
                   <h2 className="text-2xl font-bold font-headline">
-                    {user?.name || userProfile.name}
+                    {user?.name}
                   </h2>
                   <Button
                     variant="ghost"
@@ -166,11 +165,12 @@ export default function ProfilePage() {
                   </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {(user?.skills && user.skills.length > 0 ? user.skills : userProfile.skills).map((skill) => (
+                  {(user?.skills && user.skills.length > 0 ? user.skills : []).map((skill) => (
                     <Badge key={skill} variant="secondary">
                       {skill}
                     </Badge>
                   ))}
+                  {user?.skills && user.skills.length === 0 && <p className="text-sm text-muted-foreground">No skills added yet.</p>}
                 </div>
               )}
             </CardContent>
