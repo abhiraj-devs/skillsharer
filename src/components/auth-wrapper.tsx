@@ -1,16 +1,29 @@
 'use client';
-import { useAuth } from '@/hooks/use-auth';
+import { useSession } from 'next-auth/react';
 import SideNav from './side-nav';
 import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AuthWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { loading, user } = useAuth();
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const pathname = usePathname();
+  const loading = status === 'loading';
+  const isAuthPage = pathname === '/auth';
+  const isPublicPage = isAuthPage; // Add other public pages here if any
+
+  useEffect(() => {
+    if (!loading && !session && !isPublicPage) {
+      router.push(`/auth?callbackUrl=${encodeURIComponent(pathname)}`);
+    }
+  }, [loading, session, isPublicPage, pathname, router]);
+
 
   if (loading) {
     return (
@@ -20,8 +33,17 @@ export default function AuthWrapper({
     );
   }
 
-  if (pathname === '/auth') {
+  if (isAuthPage) {
     return <>{children}</>;
+  }
+
+  if (!session) {
+     return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">Redirecting to login...</p>
+      </div>
+    );
   }
 
   return (

@@ -2,10 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import SideNav from '@/components/side-nav';
-import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider, useAuth } from '@/hooks/use-auth';
+import AuthProvider from '@/components/auth-provider';
 import AuthWrapper from '@/components/auth-wrapper';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
   title: 'StudentHub',

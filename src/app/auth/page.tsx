@@ -1,14 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -46,42 +40,76 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function AuthPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState('test@example.com');
+  const [password, setPassword] = useState('password123');
+  const [confirmPassword, setConfirmPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const handleAuthAction = async (action: 'login' | 'register' | 'google') => {
+  const handleSignIn = async (provider: 'credentials' | 'google') => {
     setLoading(true);
-    try {
-      if (action === 'google') {
-        const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
-      } else if (action === 'register') {
-        if (password !== confirmPassword) {
-          throw new Error("Passwords don't match");
-        }
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-      toast({
-        title: 'Success!',
-        description:
-          action === 'register'
-            ? 'Your account has been created.'
-            : 'You have been logged in.',
-      });
-      router.push('/');
-    } catch (error: any) {
+    const callbackUrl = searchParams.get('callbackUrl') || '/';
+
+    const result = await signIn(provider, {
+      redirect: false,
+      email,
+      password,
+      callbackUrl,
+    });
+
+    if (result?.error) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
+        description: result.error,
+      });
+      setLoading(false);
+    } else if (result?.url) {
+      router.push(result.url);
+    }
+  };
+
+  const handleRegister = async () => {
+    setLoading(true);
+    if (password !== confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Registration Error',
+        description: "Passwords don't match",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      toast({
+        title: 'Registration Successful',
+        description: 'You can now log in with your credentials.',
+      });
+      // Automatically sign in after successful registration
+      await handleSignIn('credentials');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Registration Error',
         description: error.message,
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -127,7 +155,7 @@ export default function AuthPage() {
             <CardFooter className="flex-col gap-4">
               <Button
                 className="w-full"
-                onClick={() => handleAuthAction('login')}
+                onClick={() => handleSignIn('credentials')}
                 disabled={loading}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -136,11 +164,11 @@ export default function AuthPage() {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => handleAuthAction('google')}
-                disabled={loading}
+                onClick={() => handleSignIn('google')}
+                disabled={true}
               >
                 <GoogleIcon className="mr-2 h-4 w-4" />
-                Sign In with Google
+                Sign In with Google (Coming Soon)
               </Button>
             </CardFooter>
           </Card>
@@ -186,23 +214,14 @@ export default function AuthPage() {
                 />
               </div>
             </CardContent>
-            <CardFooter className="flex-col gap-4">
+            <CardFooter>
               <Button
                 className="w-full"
-                onClick={() => handleAuthAction('register')}
+                onClick={handleRegister}
                 disabled={loading}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Account
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => handleAuthAction('google')}
-                disabled={loading}
-              >
-                <GoogleIcon className="mr-2 h-4 w-4" />
-                Sign Up with Google
               </Button>
             </CardFooter>
           </Card>

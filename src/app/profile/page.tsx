@@ -12,10 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { userProfile } from '@/lib/data';
 import { Star } from 'lucide-react';
 import AIProfileGenerator from '@/components/ai-profile-generator';
-import { useAuth } from '@/hooks/use-auth';
+import { useSession } from 'next-auth/react';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
+
   return (
     <div className="flex flex-col gap-8">
       <header>
@@ -30,11 +32,11 @@ export default function ProfilePage() {
           <Card>
             <CardContent className="p-6 flex flex-col items-center text-center">
               <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src={user?.photoURL || userProfile.avatar} alt={user?.displayName || userProfile.name} data-ai-hint="person" />
+                <AvatarImage src={user?.image || userProfile.avatar} alt={user?.name || userProfile.name} data-ai-hint="person" />
                 <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || userProfile.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <h2 className="text-2xl font-bold font-headline">
-                {user?.displayName || userProfile.name}
+                {user?.name || userProfile.name}
               </h2>
               <p className="text-muted-foreground mt-2">{user?.email}</p>
               <p className="text-muted-foreground mt-2">{userProfile.bio}</p>

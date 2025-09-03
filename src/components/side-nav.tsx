@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   Bot,
   Briefcase,
@@ -24,9 +24,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useTheme } from 'next-themes';
 import { Button } from './ui/button';
-import { useAuth } from '@/hooks/use-auth';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
+import { useSession, signOut } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
@@ -60,18 +58,16 @@ const navItems = [
 export default function SideNav() {
   const pathname = usePathname();
   const { setTheme, theme } = useTheme();
-  const { user, loading } = useAuth();
-  const router = useRouter();
+  const { data: session, status } = useSession();
   const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await signOut({ callbackUrl: '/auth' });
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
       });
-      router.push('/auth');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -139,23 +135,23 @@ export default function SideNav() {
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Button>
-          {!loading &&
-            (user ? (
+          {status !== 'loading' &&
+            (session ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 overflow-hidden">
                   <Avatar className="h-10 w-10">
                     <AvatarImage
-                      src={user.photoURL || `https://avatar.vercel.sh/${user.uid}`}
-                      alt={user.displayName || 'User'}
+                      src={session.user?.image || `https://avatar.vercel.sh/${session.user?.email}`}
+                      alt={session.user?.name || 'User'}
                       data-ai-hint="person"
                     />
                     <AvatarFallback>
-                      {user.email?.charAt(0).toUpperCase()}
+                      {session.user?.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col overflow-hidden">
                     <p className="text-sm font-medium truncate">
-                      {user.displayName || user.email}
+                      {session.user?.name || session.user?.email}
                     </p>
                     <Button
                       variant="ghost"
@@ -172,7 +168,7 @@ export default function SideNav() {
             ) : (
               <Button asChild>
                 <Link href="/auth">
-                  <LogIn className="mr-2" />
+                  <LogIn className="mr-2 h-4 w-4" />
                   Login
                 </Link>
               </Button>
