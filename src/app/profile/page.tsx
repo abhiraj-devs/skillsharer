@@ -340,7 +340,7 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
                 <p className="text-sm text-muted-foreground">
-                    This application was created by Abhiraj. For any inquiries, please contact:
+                    contact:
                     <a href="mailto:abhirajcsecec@gmail.com" className="text-primary underline ml-1">
                         abhirajcsecec@gmail.com
                     </a>
