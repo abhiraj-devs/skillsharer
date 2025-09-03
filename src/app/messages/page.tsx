@@ -1,51 +1,32 @@
 
 'use client';
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import type { Conversation, Message, User } from '@/lib/data';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import type { Conversation, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Search, Send, Loader2, MessageSquare, Trash2, MoreVertical } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 
-export default function MessagesPage() {
+
+export default function MessagesListPage() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
-  const [newMessage, setNewMessage] = useState('');
-  const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
+
 
   const fetchConversations = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -58,119 +39,28 @@ export default function MessagesPage() {
       if (!res.ok) throw new Error('Failed to fetch conversations');
       const data = await res.json();
       setConversations(data);
-
-      const conversationIdFromUrl = searchParams.get('c');
-      if (conversationIdFromUrl) {
-          setSelectedConversationId(conversationIdFromUrl);
-      } else if (data.length > 0 && !selectedConversationId) {
-        setSelectedConversationId(data[0].id);
-      }
     } catch (error) {
       console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not load messages.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not load conversations.' });
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, toast, selectedConversationId, searchParams]);
-
+  }, [isAuthenticated, toast]);
 
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
 
-
-  const selectedConversation = useMemo(() => {
-    return conversations.find(c => c.id === selectedConversationId);
-  }, [conversations, selectedConversationId]);
-
-
   const getOtherUserInConvo = (convo: Conversation): User | undefined => {
     return convo.participants.find(p => p.id !== user?.id);
   }
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newMessage.trim() === '' || !selectedConversationId) return;
-    const token = localStorage.getItem('token');
-
-    try {
-      const res = await fetch(`/api/messages`, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({
-          conversationId: selectedConversationId,
-          text: newMessage,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to send message');
-      const sentMessage = await res.json();
-
-      setConversations(prev =>
-        prev.map(c =>
-          c.id === selectedConversationId
-            ? { ...c, messages: [...c.messages, sentMessage] }
-            : c
-        )
-      );
-      setNewMessage('');
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not send message.' });
-    }
-  };
-
-  const handleDeleteMessage = async () => {
-    if (!messageToDelete || !selectedConversationId) return;
-
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch('/api/messages', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                conversationId: selectedConversationId,
-                messageId: messageToDelete.id
-            })
-        });
-
-        if (!res.ok) throw new Error((await res.json()).message || 'Failed to delete message.');
-
-        // Update the state to reflect the deletion
-        setConversations(prev =>
-            prev.map(c =>
-                c.id === selectedConversationId
-                    ? {
-                        ...c,
-                        messages: c.messages.map(m =>
-                            m.id === messageToDelete.id
-                                ? { ...m, text: 'This message was deleted' }
-                                : m
-                        ),
-                    }
-                    : c
-            )
-        );
-        toast({ title: 'Success', description: 'Message deleted.' });
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error', description: error.message });
-    } finally {
-        setMessageToDelete(null);
-    }
-  };
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
-      });
-    }
-  }, [selectedConversation?.messages]);
+  const filteredConversations = useMemo(() => {
+    return conversations.filter(convo => {
+      const otherUser = getOtherUserInConvo(convo);
+      return otherUser?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    })
+  }, [conversations, searchTerm, user?.id]);
 
   if (loading) {
     return (
@@ -181,202 +71,73 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)]">
+    <div className="h-[calc(100vh-8rem)] flex flex-col">
       <header className="mb-6">
         <h1 className="text-3xl font-bold font-headline">Messages</h1>
         <p className="text-muted-foreground">
-          Communicate with other students about your projects.
+          Your conversation history.
         </p>
       </header>
-       <AlertDialog onOpenChange={(open) => !open && setMessageToDelete(null)}>
-        <div className="grid h-full grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
-            <Card className="md:col-span-1 lg:col-span-1 h-full flex flex-col">
+       <Card className="flex-1 flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline text-lg">
-                Conversations
+                    Conversations
                 </CardTitle>
                 <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search messages..." className="pl-8" />
+                <Input 
+                    placeholder="Search conversations..." 
+                    className="pl-8" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
                 </div>
             </CardHeader>
             <ScrollArea className="flex-1">
                 <CardContent className="p-0">
-                <div className="space-y-1">
-                    {conversations.map((convo) => {
-                    const otherUser = getOtherUserInConvo(convo);
-                    if (!otherUser) return null;
-                    const lastMessage = convo.messages[convo.messages.length - 1];
-                    const isSender = lastMessage?.senderId === user?.id;
+                    <div className="space-y-1">
+                        {filteredConversations.map((convo) => {
+                            const otherUser = getOtherUserInConvo(convo);
+                            if (!otherUser) return null;
+                            const lastMessage = convo.messages[convo.messages.length - 1];
+                            const isSender = lastMessage?.senderId === user?.id;
 
-                    return (
-                        <button
-                        key={convo.id}
-                        className={cn(
-                            'flex w-full cursor-pointer items-start gap-3 p-4 text-left transition-colors hover:bg-muted',
-                            selectedConversationId === convo.id && 'bg-muted'
-                        )}
-                        onClick={() => setSelectedConversationId(convo.id)}
-                        >
-                        <Avatar className="h-10 w-10">
-                            <AvatarImage
-                            src={otherUser.avatar}
-                            alt={otherUser.name}
-                            data-ai-hint="person"
-                            />
-                            <AvatarFallback>
-                            {otherUser.name.charAt(0)}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 overflow-hidden">
-                            <div className="flex justify-between">
-                            <p className="font-semibold truncate">{otherUser.name}</p>
-                            <p className="text-xs text-muted-foreground shrink-0">
-                                {lastMessage?.timestamp}
-                            </p>
-                            </div>
-                            <p className="text-sm text-muted-foreground truncate">
-                            {lastMessage ? (isSender ? `You: ${lastMessage.text}` : lastMessage.text) : 'No messages yet'}
-                            </p>
-                        </div>
-                        </button>
-                    );
-                    })}
-                </div>
-                </CardContent>
-            </ScrollArea>
-            </Card>
-
-            <Card className="md:col-span-2 lg:col-span-3 h-full flex flex-col">
-            {selectedConversation ? (
-                <>
-                <CardHeader className="border-b">
-                    <div className="flex items-center gap-3">
-                        {getOtherUserInConvo(selectedConversation) && (
-                            <>
-                            <Avatar>
-                                <AvatarImage
-                                src={getOtherUserInConvo(selectedConversation)?.avatar}
-                                alt={getOtherUserInConvo(selectedConversation)?.name}
-                                data-ai-hint="person"
-                                />
-                                <AvatarFallback>
-                                {getOtherUserInConvo(selectedConversation)?.name.charAt(0)}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle className="font-headline text-lg">
-                                {getOtherUserInConvo(selectedConversation)?.name}
-                                </CardTitle>
-                                <p className="text-sm text-muted-foreground">Online</p>
-                            </div>
-                            </>
-                        )}
-                    </div>
-                </CardHeader>
-                <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-                    <div className="space-y-4">
-                    {selectedConversation.messages.map((message) => {
-                        const isSender = message.senderId === user?.id;
-                        const messageUser = selectedConversation.participants.find(p => p.id === message.senderId);
-
-                        return (
-                            <div
-                                key={message.id}
-                                className={cn(
-                                    'flex items-end gap-2 group w-full',
-                                    isSender ? 'justify-end' : 'justify-start'
-                                )}
-                            >
-                                {!isSender && (
-                                    <Avatar className="h-8 w-8 self-end">
-                                        <AvatarImage src={messageUser?.avatar} alt={messageUser?.name} />
-                                        <AvatarFallback>{messageUser?.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                )}
-
-                                <div
+                            return (
+                                <Link
+                                    href={`/messages/${convo.id}`}
+                                    key={convo.id}
                                     className={cn(
-                                        'max-w-[70%] rounded-lg p-3 lg:max-w-md break-words',
-                                        isSender
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'bg-muted'
+                                        'flex w-full cursor-pointer items-start gap-3 p-4 text-left transition-colors hover:bg-muted'
                                     )}
                                 >
-                                    <p className="text-sm">{message.text}</p>
-                                    <p className="mt-1 text-right text-xs opacity-70">
-                                        {message.timestamp}
-                                    </p>
-                                </div>
-
-                                {isSender && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <AlertDialogTrigger asChild>
-                                                <DropdownMenuItem onSelect={() => setMessageToDelete(message)}>
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    <span>Delete for Everyone</span>
-                                                </DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                            </div>
-                        );
-                    })}
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage
+                                        src={otherUser.avatar}
+                                        alt={otherUser.name}
+                                        data-ai-hint="person"
+                                        />
+                                        <AvatarFallback>
+                                        {otherUser.name.charAt(0)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 overflow-hidden">
+                                        <div className="flex justify-between">
+                                        <p className="font-semibold truncate">{otherUser.name}</p>
+                                        <p className="text-xs text-muted-foreground shrink-0">
+                                            {lastMessage?.timestamp}
+                                        </p>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground truncate">
+                                        {lastMessage ? (isSender ? `You: ${lastMessage.text}` : lastMessage.text) : 'No messages yet'}
+                                        </p>
+                                    </div>
+                                </Link>
+                            );
+                        })}
                     </div>
-                </ScrollArea>
-                <CardFooter className="border-t pt-4">
-                    <form onSubmit={handleSendMessage} className="flex w-full items-center gap-2">
-                    <Input
-                        placeholder="Type a message..."
-                        className="flex-1"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                    />
-                    <Button
-                        type="submit"
-                        size="icon"
-                        className="shrink-0"
-                        disabled={!newMessage.trim()}
-                    >
-                        <Send className="h-4 w-4" />
-                        <span className="sr-only">Send message</span>
-                    </Button>
-                    </form>
-                </CardFooter>
-                </>
-            ) : (
-                <div className="flex h-full items-center justify-center">
-                <div className="text-center p-4">
-                    <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-2 text-sm font-medium text-foreground">No conversation selected</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                    Select a conversation from the list or start a new one from a service or request page.
-                    </p>
-                </div>
-                </div>
-            )}
-            </Card>
-        </div>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete this message for everyone in the conversation.
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteMessage} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-       </AlertDialog>
+                </CardContent>
+            </ScrollArea>
+        </Card>
     </div>
   );
 }
