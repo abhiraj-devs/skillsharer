@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Search, Send, Loader2 } from 'lucide-react';
+import { Search, Send, Loader2, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -146,6 +146,7 @@ export default function MessagesPage() {
                   const otherUser = getOtherUserInConvo(convo);
                   if (!otherUser) return null;
                   const lastMessage = convo.messages[convo.messages.length - 1];
+                  const isSender = lastMessage?.senderId === user?.id;
 
                   return (
                     <button
