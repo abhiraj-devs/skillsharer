@@ -284,7 +284,7 @@ export default function MessagesPage() {
                             <div
                                 key={message.id}
                                 className={cn(
-                                    'flex items-end gap-2 group',
+                                    'flex items-end gap-2 group w-full',
                                     isSender ? 'justify-end' : 'justify-start'
                                 )}
                             >
@@ -297,7 +297,7 @@ export default function MessagesPage() {
 
                                 <div
                                     className={cn(
-                                        'max-w-xs rounded-lg p-3 lg:max-w-md break-words',
+                                        'max-w-[70%] rounded-lg p-3 lg:max-w-md break-words',
                                         isSender
                                             ? 'bg-primary text-primary-foreground'
                                             : 'bg-muted'
@@ -312,7 +312,7 @@ export default function MessagesPage() {
                                 {isSender && (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                                                 <MoreVertical className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
@@ -353,7 +353,7 @@ export default function MessagesPage() {
                 </>
             ) : (
                 <div className="flex h-full items-center justify-center">
-                <div className="text-center">
+                <div className="text-center p-4">
                     <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
                     <h3 className="mt-2 text-sm font-medium text-foreground">No conversation selected</h3>
                     <p className="mt-1 text-sm text-muted-foreground">
