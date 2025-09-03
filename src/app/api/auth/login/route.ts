@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     }
 
     // Sign a token
-    const token = jwt.sign({ id: user.id, name: user.name, email: user.email }, secret, {
+    const token = jwt.sign({ id: user.id, name: user.name, email: user.email, skills: user.skills }, secret, {
       expiresIn: '1h',
     });
 
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
       id: user.id,
       name: user.name,
       email: user.email,
+      skills: user.skills
     };
 
     return NextResponse.json({ user: userResponse, token });

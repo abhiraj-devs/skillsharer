@@ -13,16 +13,26 @@ import { userProfile } from '@/lib/data';
 import { Edit, Save, Star, X } from 'lucide-react';
 import AIProfileGenerator from '@/components/ai-profile-generator';
 import { useAuth } from '@/hooks/use-auth';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingSkills, setIsEditingSkills] = useState(false);
   const [name, setName] = useState(user?.name || '');
+  const [skills, setSkills] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setSkills(user.skills?.join(', ') || '');
+    }
+  }, [user]);
 
   const handleSaveName = async () => {
     if (!name.trim()) {
@@ -39,15 +49,34 @@ export default function ProfilePage() {
         title: 'Success',
         description: 'Your name has been updated.',
       });
-      setIsEditing(false);
+      setIsEditingName(false);
     } catch (error: any) {
-       toast({
+      toast({
         variant: 'destructive',
         title: 'Update Failed',
         description: error.message || 'Could not update name.',
       });
     }
   };
+
+  const handleSaveSkills = async () => {
+    try {
+      const skillsArray = skills.split(',').map(s => s.trim()).filter(Boolean);
+      await updateUser({ skills: skillsArray });
+      toast({
+        title: 'Success',
+        description: 'Your skills have been updated.',
+      });
+      setIsEditingSkills(false);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error.message || 'Could not update skills.',
+      });
+    }
+  };
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -63,29 +92,48 @@ export default function ProfilePage() {
           <Card>
             <CardContent className="p-6 flex flex-col items-center text-center">
               <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src={user?.image || userProfile.avatar} alt={user?.name || userProfile.name} data-ai-hint="person" />
-                <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || userProfile.name.charAt(0)}</AvatarFallback>
+                <AvatarImage
+                  src={user?.image || userProfile.avatar}
+                  alt={user?.name || userProfile.name}
+                  data-ai-hint="person"
+                />
+                <AvatarFallback>
+                  {user?.email?.charAt(0).toUpperCase() ||
+                    userProfile.name.charAt(0)}
+                </AvatarFallback>
               </Avatar>
-              
-              {!isEditing ? (
-                 <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-bold font-headline">
-                      {user?.name || userProfile.name}
-                    </h2>
-                    <Button variant="ghost" size="icon" onClick={() => {
-                        setName(user?.name || '');
-                        setIsEditing(true)
-                    }}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
+
+              {!isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-bold font-headline">
+                    {user?.name || userProfile.name}
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setName(user?.name || '');
+                      setIsEditingName(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
               ) : (
                 <div className="flex items-center gap-2 w-full">
-                  <Input value={name} onChange={(e) => setName(e.target.value)} className="text-center" />
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="text-center"
+                  />
                   <Button variant="ghost" size="icon" onClick={handleSaveName}>
                     <Save className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setIsEditing(false)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsEditingName(false)}
+                  >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -95,17 +143,36 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
+            <CardHeader className='flex-row items-center justify-between'>
               <CardTitle className="font-headline text-lg">Skills</CardTitle>
+              {!isEditingSkills && (
+                 <Button variant="ghost" size="icon" onClick={() => setIsEditingSkills(true)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+              )}
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {userProfile.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
+              {isEditingSkills ? (
+                 <div className="space-y-4">
+                    <Textarea
+                      value={skills}
+                      onChange={(e) => setSkills(e.target.value)}
+                      placeholder="Enter skills, separated by commas"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setIsEditingSkills(false)}>Cancel</Button>
+                      <Button onClick={handleSaveSkills}>Save</Button>
+                    </div>
+                  </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {(user?.skills && user.skills.length > 0 ? user.skills : userProfile.skills).map((skill) => (
+                    <Badge key={skill} variant="secondary">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -174,7 +241,9 @@ export default function ProfilePage() {
                           <div className="flex items-center justify-between">
                             <p className="font-semibold">{review.user.name}</p>
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Star className="h-4 w-4 fill-accent text-accent" />
+                              <Star
+                                className="h-4 w-4 fill-accent text-accent"
+                              />
                               <span>{review.rating.toFixed(1)}</span>
                             </div>
                           </div>

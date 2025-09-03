@@ -33,11 +33,12 @@ export async function POST(request: Request) {
       email,
       password, // Store hashed password
       name: email.split('@')[0], // Simple name generation
+      skills: ['New User', 'Learner'],
     };
 
     users.push(newUser);
 
-    const token = jwt.sign({ id: newUser.id, name: newUser.name, email: newUser.email }, secret, {
+    const token = jwt.sign({ id: newUser.id, name: newUser.name, email: newUser.email, skills: newUser.skills }, secret, {
       expiresIn: '1h',
     });
 
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
       id: newUser.id,
       name: newUser.name,
       email: newUser.email,
+      skills: newUser.skills,
     };
 
     return NextResponse.json({ user: userResponse, token });

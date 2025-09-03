@@ -17,11 +17,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1];
-    const { name } = await request.json();
+    const { name, skills } = await request.json();
 
-    if (!name) {
+    if (!name && !skills) {
       return NextResponse.json(
-        { message: 'Name is required' },
+        { message: 'Name or skills are required' },
         { status: 400 }
       );
     }
@@ -42,13 +42,19 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    // Update the user's name in our mock user list
-    user.name = name;
+    // Update user properties if they exist in the request
+    if (name) {
+      user.name = name;
+    }
+    if (skills) {
+      user.skills = skills;
+    }
 
     const userResponse = {
       id: user.id,
       name: user.name,
       email: user.email,
+      skills: user.skills,
     };
     
     return NextResponse.json({ user: userResponse });

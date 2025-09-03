@@ -1,6 +1,7 @@
 'use server';
 import { NextResponse, type NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
+import { users } from '@/lib/users';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,18 +19,22 @@ export async function GET(request: NextRequest) {
     const token = authHeader.split(' ')[1];
 
     try {
-      const decoded = jwt.verify(token, secret);
-      // The decoded object will contain the payload you signed
-      // e.g., { id: '1', name: 'Test User', email: 'test@example.com', iat, exp }
-      // You can do a DB lookup here if you want to return fresh user data
-      
-      const user = decoded as any;
+      const decoded = jwt.verify(token, secret) as any;
 
-      return NextResponse.json({ user: {
-        id: user.id,
-        name: user.name,
-        email: user.email
-      }});
+      const userFromDb = users.find(u => u.id === decoded.id);
+
+      if (!userFromDb) {
+        return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      }
+      
+      const user = {
+        id: userFromDb.id,
+        name: userFromDb.name,
+        email: userFromDb.email,
+        skills: userFromDb.skills,
+      };
+
+      return NextResponse.json({ user });
 
     } catch (error) {
       // This will catch errors like expired tokens
