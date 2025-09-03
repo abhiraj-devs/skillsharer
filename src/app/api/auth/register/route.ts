@@ -6,37 +6,11 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import UserModel from '@/models/User';
 
-
-async function verifyRecaptcha(token: string) {
-    const secret = process.env.RECAPTCHA_SECRET_KEY;
-    if (!secret) {
-        console.warn("RECAPTCHA_SECRET_KEY is not set. Skipping verification.");
-        // In a real production environment, you should throw an error here.
-        // For development, we'll allow it to pass.
-        return true;
-    }
-    const response = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${secret}&response=${token}`, {
-        method: 'POST'
-    });
-    const data = await response.json();
-    return data.success;
-}
-
-
 export async function POST(request: Request) {
   try {
     await dbConnect();
-    const { email, password, recaptchaToken } = await request.json();
+    const { email, password } = await request.json();
     const secret = process.env.JWT_SECRET;
-
-    if (!recaptchaToken) {
-        return NextResponse.json({ message: 'reCAPTCHA verification failed.' }, { status: 400 });
-    }
-
-    const isHuman = await verifyRecaptcha(recaptchaToken);
-    if (!isHuman) {
-        return NextResponse.json({ message: 'reCAPTCHA verification failed. Are you a robot?' }, { status: 403 });
-    }
 
     if (!email || !password) {
       return NextResponse.json(

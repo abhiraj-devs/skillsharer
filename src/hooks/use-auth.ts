@@ -6,9 +6,9 @@ export interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (identifier: string, password: string, recaptchaToken: string) => Promise<User>;
+  login: (identifier: string, password: string) => Promise<User>;
   logout: () => void;
-  register: (email: string, password: string, recaptchaToken: string) => Promise<User>;
+  register: (email: string, password: string) => Promise<User>;
   updateUser: (data: Partial<User>) => Promise<User>;
 }
 

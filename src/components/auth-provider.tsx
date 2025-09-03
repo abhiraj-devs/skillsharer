@@ -30,10 +30,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     [router]
   );
 
-  const login = async (identifier: string, password: string, recaptchaToken: string): Promise<User> => {
+  const login = async (identifier: string, password: string): Promise<User> => {
     setLoading(true);
     try {
-      const loggedInUser = await loginService(identifier, password, recaptchaToken);
+      const loggedInUser = await loginService(identifier, password);
       setUser(loggedInUser);
       // Don't redirect here, let AuthWrapper handle it
       return loggedInUser;
@@ -47,12 +47,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (
     email: string,
-    password: string,
-    recaptchaToken: string
+    password: string
   ): Promise<User> => {
     setLoading(true);
     try {
-      const registeredUser = await registerService(email, password, recaptchaToken);
+      const registeredUser = await registerService(email, password);
       setUser(registeredUser);
        // Don't redirect here, let AuthWrapper handle it
       return registeredUser;
