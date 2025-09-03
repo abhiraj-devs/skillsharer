@@ -11,6 +11,7 @@ export type User = {
   bio: string;
   skills: string[];
   lastSeen?: string;
+  totalEarnings?: number;
 };
 
 export type Service = {
@@ -32,6 +33,8 @@ export type Request = {
   budget: number;
   tags: string[];
   user: User;
+  status: 'open' | 'fulfilled';
+  solver?: User | null;
 };
 
 export type Message = {

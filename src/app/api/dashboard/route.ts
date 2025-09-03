@@ -26,14 +26,19 @@ export async function GET(request: NextRequest) {
     const userId = new Types.ObjectId(decodedToken.id);
 
     // Fetch all data in parallel
-    const [userServices, userRequests, userReviews] = await Promise.all([
+    const [user, userServices, userRequests, userReviews] = await Promise.all([
+      UserModel.findById(userId),
       ServiceModel.find({ user: userId }),
       RequestModel.find({ user: userId }),
       ReviewModel.find({ user: userId }).populate('reviewer', 'name avatar'),
     ]);
     
+    if (!user) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+
     const completedTasks = userServices.length;
-    const activeTasks = userRequests.length;
+    const activeTasks = userRequests.filter(r => r.status === 'open').length;
 
     const totalReviews = userReviews.length;
     const averageRating = totalReviews > 0
@@ -62,16 +67,16 @@ export async function GET(request: NextRequest) {
         monthLabels[monthKey] = monthName;
     }
 
-    let totalEarnings = 0;
-    userServices.forEach(item => {
-        const completedDate = item.createdAt;
+    const fulfilledRequests = await RequestModel.find({ solver: userId, status: 'fulfilled' });
+
+    fulfilledRequests.forEach(item => {
+        const completedDate = item.completedAt;
         if (completedDate) {
             const monthKey = format(new Date(completedDate), 'yyyy-MM');
             if (performanceData[monthKey]) {
-                performanceData[monthKey].earnings += item.price;
+                performanceData[monthKey].earnings += item.budget;
                 performanceData[monthKey].tasks += 1;
             }
-            totalEarnings += item.price;
         }
     });
 
@@ -82,7 +87,7 @@ export async function GET(request: NextRequest) {
 
 
     return NextResponse.json({
-      totalEarnings: totalEarnings,
+      totalEarnings: user.totalEarnings || 0,
       completedTasks,
       activeTasks,
       averageRating,

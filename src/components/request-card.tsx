@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Request } from '@/lib/data';
+import type { Request, User as ConvoUser } from '@/lib/data';
 import {
   Card,
   CardContent,
@@ -58,6 +58,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const requestFormSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters long.'),
@@ -84,7 +91,11 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
   const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  
+  const [isFulfillDialogOpen, setIsFulfillDialogOpen] = useState(false);
+
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [selectedSolver, setSelectedSolver] = useState<string>('');
+  const [isFulfilling, setIsFulfilling] = useState(false);
 
   const form = useForm<z.infer<typeof requestFormSchema>>({
     resolver: zodResolver(requestFormSchema),
@@ -95,6 +106,29 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
       tags: request.tags.join(', '),
     },
   });
+
+  const fetchConversations = useCallback(async () => {
+    if (!user) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/messages', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch conversations');
+        const data = await res.json();
+        const relevantUsers = data.map((convo: any) => convo.participants.find((p: any) => p.id !== user.id)).filter(Boolean);
+        setConversations(relevantUsers);
+    } catch (error) {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load conversations for solver selection.' });
+    }
+  }, [user, toast]);
+  
+  useEffect(() => {
+    if(isFulfillDialogOpen) {
+      fetchConversations();
+    }
+  }, [isFulfillDialogOpen, fetchConversations])
   
   const handleOfferHelp = async () => {
     if (!user) {
@@ -188,13 +222,41 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
     }
   }
 
+  const handleFulfillRequest = async () => {
+    if (!selectedSolver) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Please select a solver.' });
+        return;
+    }
+    setIsFulfilling(true);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`/api/requests/${request.id}/fulfill`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ solverId: selectedSolver }),
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to fulfill request.');
+      const updatedRequest = await res.json();
+      toast({ title: 'Success!', description: `${updatedRequest.solver.name} has been paid.` });
+      onRequestUpdated(updatedRequest);
+      setIsFulfillDialogOpen(false);
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+      setIsFulfilling(false);
+    }
+  }
+
 
   return (
     <Card className="flex flex-col">
       <CardHeader>
         <div className="flex justify-between items-start">
             <CardTitle className="font-headline text-lg pr-2">{request.title}</CardTitle>
-            {user?.id === request.user.id && (
+            {user?.id === request.user.id && request.status === 'open' && (
                 <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                         <DropdownMenu>
@@ -259,7 +321,7 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
                 </AlertDialog>
             )}
         </div>
-        <div className="flex items-center gap-2 pt-2">
+         <div className="flex items-center gap-2 pt-2">
             <Link href={`/users/${request.user.id}`}>
                 <Avatar className="h-6 w-6 cursor-pointer">
                     <AvatarImage
@@ -291,12 +353,60 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
         <div className="text-sm font-semibold text-primary">
           Budget: ₹{request.budget.toLocaleString()}
         </div>
-         {user?.id !== request.user.id && (
+        <div>
+          {request.status === 'fulfilled' ? (
+            <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-semibold">Fulfilled</span>
+            </div>
+          ) : user?.id === request.user.id ? (
+            <Dialog open={isFulfillDialogOpen} onOpenChange={setIsFulfillDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary">Mark as Fulfilled</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Mark Request as Fulfilled</DialogTitle>
+                  <DialogDescription>
+                    Select the user who completed this request. This will transfer the budget amount to their earnings. This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <Select onValueChange={setSelectedSolver} value={selectedSolver}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select the solver..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {conversations.map((convoUser) => (
+                        <SelectItem key={convoUser.id} value={convoUser.id}>
+                          <div className="flex items-center gap-2">
+                             <Avatar className="h-6 w-6">
+                                <AvatarImage src={convoUser.avatar} alt={convoUser.name}/>
+                                <AvatarFallback>{convoUser.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                            <span>{convoUser.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <Button onClick={handleFulfillRequest} disabled={isFulfilling || !selectedSolver}>
+                    {isFulfilling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                    Confirm & Pay ₹{request.budget}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          ) : (
             <Button onClick={handleOfferHelp} disabled={isSubmittingOffer}>
-                {isSubmittingOffer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Offer Help
+              {isSubmittingOffer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Offer Help
             </Button>
           )}
+        </div>
       </CardFooter>
     </Card>
   );
