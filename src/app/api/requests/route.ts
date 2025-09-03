@@ -14,7 +14,9 @@ export async function GET() {
         .populate({ path: 'solver', model: UserModel, select: 'name avatar' })
         .sort({ createdAt: -1 });
 
-    const formattedRequests = requests.map(request => ({
+    const formattedRequests = requests
+      .filter(request => request.user) // Filter out requests with null users
+      .map(request => ({
         id: request._id.toString(),
         title: request.title,
         description: request.description,
