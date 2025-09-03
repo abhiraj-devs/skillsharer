@@ -1,3 +1,4 @@
+
 'use client';
 import {
   AuthContext,
@@ -34,7 +35,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const loggedInUser = await loginService(email, password);
       setUser(loggedInUser);
-      handleAuthRedirect('/');
+      // Don't redirect here, let AuthWrapper handle it
       return loggedInUser;
     } catch (error) {
       setUser(null);
@@ -54,7 +55,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const registeredUser = await registerService(email, password, name, skills);
       setUser(registeredUser);
-      handleAuthRedirect('/');
+       // Don't redirect here, let AuthWrapper handle it
       return registeredUser;
     } catch (error) {
       setUser(null);
@@ -66,6 +67,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   
   const updateUser = async (data: Partial<User>): Promise<User> => {
     try {
+       const token = localStorage.getItem('token');
+       if (!token) throw new Error("No token found");
       const updatedUser = await updateUserService(data);
       setUser(updatedUser);
       return updatedUser;
@@ -116,7 +119,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isAuthenticated: !!user,
     }),
-    [user, loading, register]
+    [user, loading, logout, register]
   );
 
   return (

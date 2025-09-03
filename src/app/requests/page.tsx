@@ -1,9 +1,10 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { RequestCard } from '@/components/request-card';
-import { requestsData, type Request, type User } from '@/lib/data';
-import { PlusCircle } from 'lucide-react';
-import { useState } from 'react';
+import { type Request } from '@/lib/data';
+import { PlusCircle, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 
 const requestFormSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters long.'),
@@ -41,9 +43,35 @@ const requestFormSchema = z.object({
 });
 
 export default function RequestsPage() {
-  const [requests, setRequests] = useState(requestsData);
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/requests');
+        if (!response.ok) {
+          throw new Error('Failed to fetch requests');
+        }
+        const data = await response.json();
+        setRequests(data);
+      } catch (error) {
+        console.error(error);
+         toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not fetch requests.',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRequests();
+  }, [toast]);
 
   const form = useForm<z.infer<typeof requestFormSchema>>({
     resolver: zodResolver(requestFormSchema),
@@ -55,25 +83,41 @@ export default function RequestsPage() {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof requestFormSchema>) => {
-    if (!user) return; // Should not happen
+  const onSubmit = async (values: z.infer<typeof requestFormSchema>) => {
+    if (!user) {
+       toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to post a request.',
+      });
+      return;
+    }
 
-    const currentUser: User = {
-      name: user.name || 'User',
-      avatar: user.image || `https://avatar.vercel.sh/${user.email}`
-    };
+     try {
+      const response = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
 
-    const newRequest: Request = {
-      id: requests.length + 1,
-      title: values.title,
-      description: values.description,
-      budget: values.budget,
-      tags: values.tags.split(',').map((tag) => tag.trim()),
-      user: currentUser,
-    };
-    setRequests([newRequest, ...requests]);
-    form.reset();
-    setOpen(false);
+      if (!response.ok) {
+        throw new Error((await response.json()).message || 'Failed to post request');
+      }
+      const newRequest = await response.json();
+      setRequests((prev) => [newRequest, ...prev]);
+      form.reset();
+      setOpen(false);
+       toast({
+        title: 'Success!',
+        description: 'Your new request has been posted.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'Could not post request.',
+      });
+    }
   };
 
   return (
@@ -161,18 +205,27 @@ export default function RequestsPage() {
                   <DialogClose asChild>
                     <Button variant="outline">Cancel</Button>
                   </DialogClose>
-                  <Button type="submit">Post Request</Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Post Request
+                  </Button>
                 </DialogFooter>
               </form>
             </Form>
           </DialogContent>
         </Dialog>
       </header>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {requests.map((request) => (
-          <RequestCard key={request.id} request={request} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {requests.map((request) => (
+            <RequestCard key={request.id} request={request} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

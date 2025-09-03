@@ -1,9 +1,10 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { ServiceCard } from '@/components/service-card';
-import { servicesData, type Service, type User } from '@/lib/data';
-import { PlusCircle } from 'lucide-react';
-import { useState } from 'react';
+import { type Service, type User } from '@/lib/data';
+import { PlusCircle, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 
 const serviceFormSchema = z.object({
   title: z.string().min(10, 'Title must be at least 10 characters long.'),
@@ -43,9 +45,35 @@ const serviceFormSchema = z.object({
 });
 
 export default function ServicesPage() {
-  const [services, setServices] = useState(servicesData);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/services');
+        if (!response.ok) {
+          throw new Error('Failed to fetch services');
+        }
+        const data = await response.json();
+        setServices(data);
+      } catch (error) {
+        console.error(error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not fetch services.',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchServices();
+  }, [toast]);
 
   const form = useForm<z.infer<typeof serviceFormSchema>>({
     resolver: zodResolver(serviceFormSchema),
@@ -57,26 +85,41 @@ export default function ServicesPage() {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof serviceFormSchema>) => {
-    if (!user) return; // Should not happen if user is on this page
+  const onSubmit = async (values: z.infer<typeof serviceFormSchema>) => {
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to post a service.',
+      });
+      return;
+    }
 
-    const currentUser: User = {
-      name: user.name || 'User',
-      avatar: user.image || `https://avatar.vercel.sh/${user.email}`
-    };
+    try {
+      const response = await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
 
-    const newService: Service = {
-      id: services.length + 1,
-      title: values.title,
-      category: values.category,
-      price: values.price,
-      imageUrl: values.imageUrl,
-      rating: 0, // New services have no rating yet
-      user: currentUser,
-    };
-    setServices([newService, ...services]);
-    form.reset();
-    setOpen(false);
+      if (!response.ok) {
+        throw new Error((await response.json()).message || 'Failed to post service');
+      }
+      const newService = await response.json();
+      setServices((prev) => [newService, ...prev]);
+      form.reset();
+      setOpen(false);
+       toast({
+        title: 'Success!',
+        description: 'Your new service has been posted.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'Could not post service.',
+      });
+    }
   };
 
   return (
@@ -177,18 +220,27 @@ export default function ServicesPage() {
                   <DialogClose asChild>
                     <Button variant="outline">Cancel</Button>
                   </DialogClose>
-                  <Button type="submit">Post Service</Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Post Service
+                  </Button>
                 </DialogFooter>
               </form>
             </Form>
           </DialogContent>
         </Dialog>
       </header>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {services.map((service) => (
-          <ServiceCard key={service.id} service={service} />
-        ))}
-      </div>
+       {loading ? (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {services.map((service) => (
+            <ServiceCard key={service.id} service={service} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
