@@ -96,6 +96,11 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
   const handleOfferHelp = async () => {
     if (!user) {
         toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to offer help.' });
+        router.push('/auth');
+        return;
+    }
+    if (user.id === request.user.id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You cannot offer help on your own request.' });
         return;
     }
     const token = localStorage.getItem('token');
@@ -108,12 +113,12 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
             },
             body: JSON.stringify({ recipientId: request.user.id })
         });
-        if (!res.ok) throw new Error('Failed to start conversation');
+        if (!res.ok) throw new Error((await res.json()).message || 'Failed to start conversation');
         const { conversationId } = await res.json();
         router.push(`/messages/${conversationId}`);
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not start conversation.' });
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
 
