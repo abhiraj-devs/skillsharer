@@ -65,7 +65,7 @@ export default function SideNav() {
         <div className="hidden items-center gap-2 border-b px-4 py-5 md:flex">
           <Bot className="h-8 w-8 text-primary" />
           <h1 className="text-xl font-bold font-headline text-foreground">
-            StudentHub
+            SkillShareBoard
           </h1>
         </div>
         <nav className="flex-1">

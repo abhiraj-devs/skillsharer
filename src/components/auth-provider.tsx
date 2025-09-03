@@ -4,6 +4,7 @@ import {
   type User,
   login as loginService,
   register as registerService,
+  updateUser as updateUserService,
   getMe,
 } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
@@ -60,6 +61,18 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   };
+  
+  const updateUser = async (data: Partial<User>): Promise<User> => {
+    try {
+      const updatedUser = await updateUserService(data);
+      setUser(updatedUser);
+      return updatedUser;
+    } catch (error) {
+      // Potentially handle error state in UI
+      console.error('Failed to update user', error);
+      throw error;
+    }
+  };
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');
@@ -97,10 +110,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       register,
+      updateUser,
       loading,
       isAuthenticated: !!user,
     }),
-    [user, login, logout, register, loading]
+    [user, loading]
   );
 
   return (

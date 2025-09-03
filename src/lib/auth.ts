@@ -77,4 +77,30 @@ export async function getMe(): Promise<User | null> {
   return data.user;
 }
 
+
+export async function updateUser(userData: Partial<User>): Promise<User> {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch('/api/user/update', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(userData),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to update user');
+  }
+
+  return data.user;
+}
+
+
 export * from '@/hooks/use-auth';

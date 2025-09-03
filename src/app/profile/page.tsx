@@ -10,12 +10,44 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { userProfile } from '@/lib/data';
-import { Star } from 'lucide-react';
+import { Edit, Save, Star, X } from 'lucide-react';
 import AIProfileGenerator from '@/components/ai-profile-generator';
 import { useAuth } from '@/hooks/use-auth';
+import { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(user?.name || '');
+
+  const handleSaveName = async () => {
+    if (!name.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Name cannot be empty.',
+      });
+      return;
+    }
+    try {
+      await updateUser({ name });
+      toast({
+        title: 'Success',
+        description: 'Your name has been updated.',
+      });
+      setIsEditing(false);
+    } catch (error: any) {
+       toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error.message || 'Could not update name.',
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -34,9 +66,30 @@ export default function ProfilePage() {
                 <AvatarImage src={user?.image || userProfile.avatar} alt={user?.name || userProfile.name} data-ai-hint="person" />
                 <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || userProfile.name.charAt(0)}</AvatarFallback>
               </Avatar>
-              <h2 className="text-2xl font-bold font-headline">
-                {user?.name || userProfile.name}
-              </h2>
+              
+              {!isEditing ? (
+                 <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-bold font-headline">
+                      {user?.name || userProfile.name}
+                    </h2>
+                    <Button variant="ghost" size="icon" onClick={() => {
+                        setName(user?.name || '');
+                        setIsEditing(true)
+                    }}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
+              ) : (
+                <div className="flex items-center gap-2 w-full">
+                  <Input value={name} onChange={(e) => setName(e.target.value)} className="text-center" />
+                  <Button variant="ghost" size="icon" onClick={handleSaveName}>
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => setIsEditing(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
               <p className="text-muted-foreground mt-2">{user?.email}</p>
               <p className="text-muted-foreground mt-2">{userProfile.bio}</p>
             </CardContent>

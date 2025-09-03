@@ -9,6 +9,7 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   register: (email: string, password: string) => Promise<User>;
+  updateUser: (data: Partial<User>) => Promise<User>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(

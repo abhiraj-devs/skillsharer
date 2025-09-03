@@ -7,7 +7,7 @@ import AuthWrapper from '@/components/auth-wrapper';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'StudentHub',
+  title: 'SkillShareBoard',
   description:
     'A micro-service platform for students to showcase, exchange, and monetize their skills.',
 };
