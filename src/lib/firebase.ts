@@ -3,12 +3,8 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig: FirebaseOptions = {
-  projectId: "studenthub-yfnf9",
-  appId: "1:230995809521:web:38b60a169495a454158550",
-  storageBucket: "studenthub-yfnf9.appspot.com",
-  apiKey: "AIzaSyCdzPvOrXV_ZsIVqCQZNrDCyOonYBAoyxs",
-  authDomain: "studenthub-yfnf9.firebaseapp.com",
-  messagingSenderId: "230995809521",
+  // Your web app's Firebase configuration
+  // This object will be populated by the AI
 };
 
 // Initialize Firebase
