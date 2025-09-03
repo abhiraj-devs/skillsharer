@@ -37,6 +37,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useParams, useRouter } from 'next/navigation';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
