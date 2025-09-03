@@ -30,10 +30,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     [router]
   );
 
-  const login = async (email: string, password: string): Promise<User> => {
+  const login = async (identifier: string, password: string): Promise<User> => {
     setLoading(true);
     try {
-      const loggedInUser = await loginService(email, password);
+      const loggedInUser = await loginService(identifier, password);
       setUser(loggedInUser);
       // Don't redirect here, let AuthWrapper handle it
       return loggedInUser;

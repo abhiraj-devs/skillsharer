@@ -10,12 +10,12 @@ export async function POST(request: Request) {
   try {
     await dbConnect();
 
-    const { email, password } = await request.json();
+    const { identifier, password } = await request.json(); // Changed from email to identifier
     const secret = process.env.JWT_SECRET;
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       return NextResponse.json(
-        { message: 'Email and password are required' },
+        { message: 'Username/Email and password are required' },
         { status: 400 }
       );
     }
@@ -24,7 +24,10 @@ export async function POST(request: Request) {
       throw new Error('JWT_SECRET is not defined in environment variables.');
     }
 
-    const user = await UserModel.findOne({ email }).select('+password');
+    // Find user by either email or name (username)
+    const user = await UserModel.findOne({
+      $or: [{ email: identifier }, { name: identifier }],
+    }).select('+password');
 
     if (!user) {
       return NextResponse.json(

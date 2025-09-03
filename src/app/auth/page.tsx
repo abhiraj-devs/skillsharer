@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -40,19 +40,36 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function AuthPage() {
+  const [identifier, setIdentifier] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { login, register } = useAuth();
 
+  const validatePassword = (pass: string) => {
+    const strongPasswordRegex = new RegExp(
+      '^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})'
+    );
+    if (!strongPasswordRegex.test(pass)) {
+      setPasswordError(
+        'Password must be at least 8 characters long, contain an uppercase letter, a lowercase letter, a number, and a special character.'
+      );
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
+
   const handleSignIn = async () => {
     setLoading(true);
     try {
-      await login(email, password);
+      await login(identifier, password);
       const callbackUrl = searchParams.get('callbackUrl') || '/';
       router.push(callbackUrl);
     } catch (error: any) {
@@ -66,17 +83,19 @@ export default function AuthPage() {
   };
 
   const handleRegister = async () => {
-    setLoading(true);
+    if (!validatePassword(password)) {
+      return;
+    }
     if (password !== confirmPassword) {
       toast({
         variant: 'destructive',
         title: 'Registration Error',
         description: "Passwords don't match",
       });
-      setLoading(false);
       return;
     }
-
+    
+    setLoading(true);
     try {
       await register(email, password);
        toast({
@@ -107,30 +126,41 @@ export default function AuthPage() {
             <CardHeader>
               <CardTitle>Login</CardTitle>
               <CardDescription>
-                Welcome back! Sign in to your account.
+                Welcome back! Sign in with your username or email.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email-login">Email</Label>
+                <Label htmlFor="identifier-login">Username or Email</Label>
                 <Input
-                  id="email-login"
-                  type="email"
-                  placeholder="m@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="identifier-login"
+                  type="text"
+                  placeholder="your.username or m@example.com"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   disabled={loading}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password-login">Password</Label>
-                <Input
-                  id="password-login"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                />
+                <div className="relative">
+                  <Input
+                    id="password-login"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </Button>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex-col gap-4">
@@ -176,23 +206,42 @@ export default function AuthPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password-register">Password</Label>
-                <Input
-                  id="password-register"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                />
+                 <div className="relative">
+                    <Input
+                    id="password-register"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => {
+                        setPassword(e.target.value);
+                        validatePassword(e.target.value);
+                    }}
+                    disabled={loading}
+                    />
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                        onClick={() => setShowPassword(!showPassword)}
+                    >
+                        {showPassword ? <EyeOff /> : <Eye />}
+                    </Button>
+                </div>
+                 {passwordError && (
+                  <p className="text-xs text-destructive">{passwordError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={loading}
-                />
+                 <div className="relative">
+                    <Input
+                    id="confirm-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={loading}
+                    />
+                </div>
               </div>
             </CardContent>
             <CardFooter>

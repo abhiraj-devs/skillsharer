@@ -10,7 +10,7 @@ export interface User {
 }
 
 export async function login(
-  email: string,
+  identifier: string,
   password: string
 ): Promise<User> {
   const response = await fetch('/api/auth/login', {
@@ -18,7 +18,7 @@ export async function login(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ identifier, password }),
   });
 
   const data = await response.json();
