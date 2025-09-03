@@ -6,8 +6,9 @@ import dbConnect from '@/lib/mongodb';
 import ServiceModel from '@/models/Service';
 import RequestModel from '@/models/Request';
 import ReviewModel from '@/models/Review';
+import UserModel from '@/models/User';
 import { Types } from 'mongoose';
-import { subMonths, format } from 'date-fns';
+import { subMonths, format, startOfMonth, endOfMonth } from 'date-fns';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,16 +25,21 @@ export async function GET(request: NextRequest) {
 
     const userId = new Types.ObjectId(decodedToken.id);
 
-    // Fetch all data in parallel
-    const [userServices, userRequests, userReviews] = await Promise.all([
-      ServiceModel.find({ user: userId }),
-      RequestModel.find({ user: userId }),
-      ReviewModel.find({ user: userId }).populate('reviewer', 'name avatar')
-    ]);
+    const user = await UserModel.findById(userId);
+    if (!user) {
+        return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
 
-    const totalEarnings = userServices.reduce((acc, service) => acc + (service.price || 0), 0);
-    const completedTasks = userServices.length; 
-    const activeTasks = userRequests.length;
+    // Fetch all data in parallel
+    const [userServices, userRequests, userReviews, fulfilledRequests] = await Promise.all([
+      ServiceModel.find({ user: userId, isFulfilled: true }),
+      RequestModel.find({ user: userId }),
+      ReviewModel.find({ user: userId }).populate('reviewer', 'name avatar'),
+      RequestModel.find({ solver: userId, status: 'fulfilled' })
+    ]);
+    
+    const completedTasks = userServices.length + fulfilledRequests.length;
+    const activeTasks = userRequests.filter(r => r.status === 'open').length;
 
     const totalReviews = userReviews.length;
     const averageRating = totalReviews > 0
@@ -44,7 +50,7 @@ export async function GET(request: NextRequest) {
         id: review._id.toString(),
         comment: review.comment,
         rating: review.rating,
-        user: { // This is the reviewer
+        user: { 
             name: (review.reviewer as any).name,
             avatar: (review.reviewer as any).avatar
         }
@@ -54,7 +60,6 @@ export async function GET(request: NextRequest) {
     const performanceData: { [key: string]: { earnings: number, tasks: number } } = {};
     const monthLabels: { [key: string]: string } = {};
     
-    // Initialize last 6 months
     for (let i = 5; i >= 0; i--) {
         const date = subMonths(new Date(), i);
         const monthKey = format(date, 'yyyy-MM');
@@ -63,12 +68,13 @@ export async function GET(request: NextRequest) {
         monthLabels[monthKey] = monthName;
     }
 
-    // Process services
-    userServices.forEach(service => {
-        if (service.createdAt) {
-            const monthKey = format(new Date(service.createdAt), 'yyyy-MM');
+    // Process fulfilled requests for earnings and tasks
+    [...userServices, ...fulfilledRequests].forEach(item => {
+        const completedDate = (item as any).completedAt || item.updatedAt;
+        if (completedDate) {
+            const monthKey = format(new Date(completedDate), 'yyyy-MM');
             if (performanceData[monthKey]) {
-                performanceData[monthKey].earnings += service.price;
+                performanceData[monthKey].earnings += (item as any).price || (item as any).budget;
                 performanceData[monthKey].tasks += 1;
             }
         }
@@ -77,11 +83,11 @@ export async function GET(request: NextRequest) {
     const performance = Object.keys(performanceData).map(key => ({
         month: monthLabels[key],
         ...performanceData[key]
-    })).slice(-6); // Ensure only last 6 months are sent
+    })).slice(-6);
 
 
     return NextResponse.json({
-      totalEarnings,
+      totalEarnings: user.totalEarnings,
       completedTasks,
       activeTasks,
       averageRating,

@@ -9,6 +9,7 @@ export interface IUser extends Document {
   avatar: string;
   bio: string;
   lastSeen: Date;
+  totalEarnings: number;
 }
 
 const UserSchema: Schema<IUser> = new Schema({
@@ -18,7 +19,8 @@ const UserSchema: Schema<IUser> = new Schema({
   skills: { type: [String], default: [] },
   avatar: { type: String },
   bio: { type: String, default: 'Computer Science student passionate about web development and design. Turning ideas into reality one line of code at a time. Here to help and collaborate!', maxlength: 300 },
-  lastSeen: { type: Date, default: Date.now }
+  lastSeen: { type: Date, default: Date.now },
+  totalEarnings: { type: Number, default: 0 }
 });
 
 // Pre-save hook to generate avatar URL

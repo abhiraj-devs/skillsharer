@@ -11,6 +11,7 @@ export interface IService extends Document {
     user: Types.ObjectId | IUser;
     createdAt: Date;
     updatedAt: Date;
+    isFulfilled: boolean;
 }
 
 const ServiceSchema: Schema<IService> = new Schema({
@@ -19,7 +20,8 @@ const ServiceSchema: Schema<IService> = new Schema({
     price: { type: Number, required: true },
     imageUrl: { type: String, required: true },
     rating: { type: Number, default: 0 },
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true }
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    isFulfilled: { type: Boolean, default: false }
 }, { timestamps: true });
 
 

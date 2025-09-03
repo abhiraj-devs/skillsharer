@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Request } from '@/lib/data';
 import {
   Card,
@@ -58,6 +58,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import type { Conversation, User } from '@/lib/data';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const requestFormSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters long.'),
@@ -84,6 +86,11 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
   const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isFulfillDialogOpen, setIsFulfillDialogOpen] = useState(false);
+  const [conversations, setConversations] = useState<User[]>([]);
+  const [selectedSolver, setSelectedSolver] = useState('');
+  const [isFulfilling, setIsFulfilling] = useState(false);
+
 
   const form = useForm<z.infer<typeof requestFormSchema>>({
     resolver: zodResolver(requestFormSchema),
@@ -94,6 +101,30 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
       tags: request.tags.join(', '),
     },
   });
+
+  const fetchConversations = useCallback(async () => {
+    if (user?.id !== request.user.id) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/messages', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch conversations');
+        const data: Conversation[] = await res.json();
+        const otherUsers = data.map(convo => convo.participants.find(p => p.id !== user.id)).filter(Boolean) as User[];
+        setConversations(otherUsers);
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load users to fulfill request.' });
+    }
+}, [user, request.user.id, toast]);
+
+
+  useEffect(() => {
+    if (isFulfillDialogOpen) {
+      fetchConversations();
+    }
+  }, [isFulfillDialogOpen, fetchConversations]);
+  
   
   const handleOfferHelp = async () => {
     if (!user) {
@@ -110,7 +141,6 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
     const token = localStorage.getItem('token');
 
     try {
-        // Step 1: Start or get the conversation
         const startConvoRes = await fetch('/api/conversations/start', {
             method: 'POST',
             headers: {
@@ -122,8 +152,7 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
 
         if (!startConvoRes.ok) throw new Error((await startConvoRes.json()).message || 'Failed to start conversation');
         const { conversationId } = await startConvoRes.json();
-
-        // Step 2: Send the request title as the initial message
+        
         const messageText = `Regarding your request: "${request.title}"`;
         const sendMessageRes = await fetch(`/api/messages`, {
             method: 'POST',
@@ -138,8 +167,7 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
         });
 
         if (!sendMessageRes.ok) throw new Error((await sendMessageRes.json()).message || 'Failed to send initial message');
-
-        // Step 3: Redirect to the conversation
+        
         router.push(`/messages/${conversationId}`);
 
     } catch (error: any) {
@@ -189,6 +217,37 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   }
+  
+  const handleFulfillRequest = async () => {
+    if (!selectedSolver) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please select the user who completed the request.' });
+      return;
+    }
+    setIsFulfilling(true);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`/api/requests/${request.id}/fulfill`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ solverId: selectedSolver })
+      });
+
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to fulfill request.');
+
+      const updatedRequest = await res.json();
+      toast({ title: 'Success!', description: `${updatedRequest.solver.name}'s earnings have been updated.` });
+      onRequestUpdated(updatedRequest);
+      setIsFulfillDialogOpen(false);
+
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+      setIsFulfilling(false);
+    }
+  };
 
 
   return (
@@ -293,10 +352,55 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
         <div className="text-sm font-semibold text-primary">
           Budget: ₹{request.budget.toLocaleString()}
         </div>
-        <Button onClick={handleOfferHelp} disabled={user?.id === request.user.id || isSubmittingOffer}>
-            {isSubmittingOffer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Offer Help
-        </Button>
+         {user?.id === request.user.id ? (
+            <Dialog open={isFulfillDialogOpen} onOpenChange={setIsFulfillDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="gooeyLeft" disabled={request.status === 'fulfilled'}>
+                  {request.status === 'fulfilled' ? <><CheckCircle className="mr-2 h-4 w-4" /> Fulfilled</> : 'Mark as Fulfilled'}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Fulfill Request</DialogTitle>
+                  <DialogDescription>
+                    Select the user who completed this request. This will transfer the budget amount to their earnings. This action is final.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <Select onValueChange={setSelectedSolver} value={selectedSolver}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a user..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {conversations.map(cUser => (
+                                <SelectItem key={cUser.id} value={cUser.id}>
+                                    <div className="flex items-center gap-2">
+                                        <Avatar className="h-6 w-6">
+                                            <AvatarImage src={cUser.avatar} />
+                                            <AvatarFallback>{cUser.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span>{cUser.name}</span>
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <Button onClick={handleFulfillRequest} disabled={isFulfilling || !selectedSolver}>
+                    {isFulfilling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirm & Pay ₹{request.budget}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <Button onClick={handleOfferHelp} disabled={isSubmittingOffer || request.status === 'fulfilled'}>
+                {isSubmittingOffer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {request.status === 'fulfilled' ? 'Fulfilled' : 'Offer Help'}
+            </Button>
+          )}
       </CardFooter>
     </Card>
   );
