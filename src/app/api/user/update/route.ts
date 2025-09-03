@@ -1,17 +1,7 @@
 'use server';
 import { NextResponse, type NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
-
-// In a real application, you'd want to store and retrieve users from a database.
-// For now, we'll modify the in-memory array.
-const users = [
-  {
-    id: '1',
-    name: 'Test User',
-    email: 'test@example.com',
-    password: 'password123',
-  },
-];
+import { users } from '@/lib/users';
 
 export async function PUT(request: NextRequest) {
   try {

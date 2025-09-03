@@ -1,16 +1,7 @@
 'use server';
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-
-// This is a mock implementation. In a real app, you'd use a database.
-const users: any[] = [
-  {
-    id: '1',
-    name: 'Test User',
-    email: 'test@example.com',
-    password: 'password123', // In a real app, this should be hashed
-  },
-];
+import { users } from '@/lib/users';
 
 export async function POST(request: Request) {
   try {
