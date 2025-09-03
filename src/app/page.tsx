@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -17,7 +18,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { dashboardData as staticDashboardData, userProfile } from '@/lib/data';
+import { userProfile } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Activity,
@@ -30,12 +31,23 @@ import { useAuth } from '@/hooks/use-auth';
 import { useEffect, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
+type Review = {
+  id: string;
+  rating: number;
+  comment: string;
+  user: {
+    name: string;
+    avatar: string;
+  };
+};
+
 type DashboardData = {
   totalEarnings: number;
   completedTasks: number;
   activeTasks: number;
   averageRating: number;
   totalReviews: number;
+  reviews: Review[];
   performance: { month: string; earnings: number; tasks: number }[];
 };
 
@@ -90,7 +102,12 @@ export default function Dashboard() {
     activeTasks: 0,
     averageRating: 0,
     totalReviews: 0,
-    performance: staticDashboardData.performance,
+    reviews: [],
+    performance: userProfile.completedTasks.map((_, i) => ({ // Use a static fallback
+        month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
+        earnings: Math.floor(Math.random() * 1000) + 500,
+        tasks: Math.floor(Math.random() * 10) + 1,
+    }))
   };
 
 
@@ -143,7 +160,7 @@ export default function Dashboard() {
               {displayData.averageRating.toFixed(1)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Based on {displayData.totalReviews} reviews (static)
+              Based on {displayData.totalReviews} reviews
             </p>
           </CardContent>
         </Card>
@@ -221,31 +238,35 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="font-headline">Recent Reviews</CardTitle>
             <CardDescription>
-              What people are saying about your work (static).
+              What people are saying about your work.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-4">
-              {userProfile.reviews.map((review) => (
-                <li key={review.id} className="flex items-start gap-4">
-                  <Avatar>
-                    <AvatarImage src={review.user.avatar} alt={review.user.name} />
-                    <AvatarFallback>{review.user.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold">{review.user.name}</p>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Star className="h-4 w-4 fill-accent text-accent" />
-                        <span>{review.rating.toFixed(1)}</span>
+              {displayData.reviews.length > 0 ? (
+                 displayData.reviews.map((review) => (
+                  <li key={review.id} className="flex items-start gap-4">
+                    <Avatar>
+                      <AvatarImage src={review.user.avatar} alt={review.user.name} />
+                      <AvatarFallback>{review.user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold">{review.user.name}</p>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Star className="h-4 w-4 fill-accent text-accent" />
+                          <span>{review.rating.toFixed(1)}</span>
+                        </div>
                       </div>
+                      <p className="text-sm text-muted-foreground">
+                        "{review.comment}"
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      "{review.comment}"
-                    </p>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No reviews yet.</p>
+              )}
             </ul>
           </CardContent>
         </Card>

@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -9,15 +10,35 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { userProfile } from '@/lib/data';
-import { Edit, Save, Star, X } from 'lucide-react';
+import { userProfile, type User } from '@/lib/data';
+import { Edit, Save, Star, X, Loader2 } from 'lucide-react';
 import AIProfileGenerator from '@/components/ai-profile-generator';
 import { useAuth } from '@/hooks/use-auth';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+type Review = {
+  id: string;
+  rating: number;
+  comment: string;
+  reviewer: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
+  createdAt: string;
+};
+
+const reviewSchema = z.object({
+    rating: z.coerce.number().min(1, "Rating is required.").max(5),
+    comment: z.string().min(10, "Comment must be at least 10 characters.").max(500),
+});
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -27,12 +48,41 @@ export default function ProfilePage() {
   const [name, setName] = useState(user?.name || '');
   const [skills, setSkills] = useState('');
 
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewStats, setReviewStats] = useState({ average: 0, count: 0 });
+  const [loadingReviews, setLoadingReviews] = useState(true);
+
+  const reviewForm = useForm<z.infer<typeof reviewSchema>>({
+    resolver: zodResolver(reviewSchema),
+    defaultValues: {
+        rating: 0,
+        comment: ''
+    }
+  });
+
+
   useEffect(() => {
     if (user) {
       setName(user.name || '');
       setSkills(user.skills?.join(', ') || '');
+      fetchReviews(user.id);
     }
   }, [user]);
+
+  const fetchReviews = useCallback(async (userId: string) => {
+    setLoadingReviews(true);
+    try {
+        const res = await fetch(`/api/reviews?userId=${userId}`);
+        if (!res.ok) throw new Error('Failed to fetch reviews.');
+        const data = await res.json();
+        setReviews(data.reviews);
+        setReviewStats({ average: data.averageRating, count: data.totalReviews });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+        setLoadingReviews(false);
+    }
+  }, [toast]);
 
   const handleSaveName = async () => {
     if (!name.trim()) {
@@ -77,6 +127,25 @@ export default function ProfilePage() {
     }
   };
 
+  const handleReviewSubmit = async (values: z.infer<typeof reviewSchema>) => {
+    if (!user) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ ...values, userId: user.id })
+        });
+        if (!res.ok) throw new Error((await res.json()).message || 'Failed to submit review.');
+        const newReview = await res.json();
+        setReviews(prev => [newReview, ...prev]);
+        reviewForm.reset();
+        toast({ title: 'Success!', description: 'Your review has been submitted.' });
+        fetchReviews(user.id); // Re-fetch to update stats
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -216,46 +285,90 @@ export default function ProfilePage() {
               </Card>
             </TabsContent>
             <TabsContent value="reviews" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-headline">Your Reviews</CardTitle>
-                  <CardDescription>
-                    Feedback from students you've collaborated with.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-6">
-                    {userProfile.reviews.map((review) => (
-                      <li key={review.id} className="flex items-start gap-4">
-                        <Avatar>
-                          <AvatarImage
-                            src={review.user.avatar}
-                            alt={review.user.name}
-                            data-ai-hint="person"
-                          />
-                          <AvatarFallback>
-                            {review.user.name.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <p className="font-semibold">{review.user.name}</p>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Star
-                                className="h-4 w-4 fill-accent text-accent"
-                              />
-                              <span>{review.rating.toFixed(1)}</span>
+               <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                    <CardTitle className="font-headline">Your Reviews</CardTitle>
+                    <CardDescription>
+                        Feedback from students you've collaborated with. 
+                        You have {reviewStats.count} reviews with an average rating of {reviewStats.average.toFixed(1)}.
+                    </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                    {loadingReviews ? <Loader2 className="animate-spin" /> : (
+                        <ul className="space-y-6">
+                            {reviews.map((review) => (
+                            <li key={review.id} className="flex items-start gap-4">
+                                <Avatar>
+                                <AvatarImage
+                                    src={review.reviewer.avatar}
+                                    alt={review.reviewer.name}
+                                    data-ai-hint="person"
+                                />
+                                <AvatarFallback>
+                                    {review.reviewer.name.charAt(0)}
+                                </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                    <p className="font-semibold">{review.reviewer.name}</p>
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                    <Star className="h-4 w-4 fill-accent text-accent" />
+                                    <span>{review.rating.toFixed(1)}</span>
+                                    </div>
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    "{review.comment}"
+                                </p>
+                                </div>
+                            </li>
+                            ))}
+                        </ul>
+                    )}
+                    {reviews.length === 0 && !loadingReviews && (
+                        <p className="text-sm text-center text-muted-foreground py-4">No reviews yet.</p>
+                    )}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Leave a Review</CardTitle>
+                        <CardDescription>Share your experience working with {user?.name}.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={reviewForm.handleSubmit(handleReviewSubmit)} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Rating</label>
+                                <Controller
+                                    name="rating"
+                                    control={reviewForm.control}
+                                    render={({ field }) => (
+                                        <div className="flex gap-1">
+                                            {[1,2,3,4,5].map(i => (
+                                                <Star 
+                                                    key={i} 
+                                                    className={cn("h-6 w-6 cursor-pointer", i <= field.value ? "text-accent fill-accent" : "text-gray-300")}
+                                                    onClick={() => field.onChange(i)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                />
+                                {reviewForm.formState.errors.rating && <p className="text-destructive text-sm mt-1">{reviewForm.formState.errors.rating.message}</p>}
                             </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            "{review.comment}"
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+                            <div>
+                               <label className="block text-sm font-medium mb-2">Comment</label>
+                               <Textarea {...reviewForm.register('comment')} placeholder="Describe your experience..."/>
+                               {reviewForm.formState.errors.comment && <p className="text-destructive text-sm mt-1">{reviewForm.formState.errors.comment.message}</p>}
+                            </div>
+                            <Button type="submit" disabled={reviewForm.formState.isSubmitting}>
+                                {reviewForm.formState.isSubmitting && <Loader2 className="animate-spin mr-2"/>}
+                                Submit Review
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+               </div>
             </TabsContent>
           </Tabs>
         </div>

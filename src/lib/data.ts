@@ -1,4 +1,5 @@
 
+
 // All mock data has been removed and is now being fetched from MongoDB via API endpoints.
 // Type definitions are kept for frontend components.
 
@@ -10,7 +11,7 @@ export type User = {
 
 export type Service = {
   _id: string;
-  id: string;
+  id:string;
   title: string;
   category: string;
   price: number;
@@ -45,6 +46,15 @@ export type Conversation = {
   participants: User[]; 
   messages: Message[];
 };
+
+export type Review = {
+    id: string;
+    rating: number;
+    comment: string;
+    reviewer: User;
+    user: User;
+    createdAt: string;
+}
 
 
 // =================================================================

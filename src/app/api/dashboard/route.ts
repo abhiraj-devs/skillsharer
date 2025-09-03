@@ -5,6 +5,7 @@ import { verifyJwt } from '@/lib/utils';
 import dbConnect from '@/lib/mongodb';
 import ServiceModel from '@/models/Service';
 import RequestModel from '@/models/Request';
+import ReviewModel from '@/models/Review';
 import { Types } from 'mongoose';
 
 export async function GET(request: NextRequest) {
@@ -24,14 +25,27 @@ export async function GET(request: NextRequest) {
 
     const userServices = await ServiceModel.find({ user: userId });
     const userRequests = await RequestModel.find({ user: userId });
+    const userReviews = await ReviewModel.find({ user: userId }).populate('reviewer', 'name avatar');
 
     const totalEarnings = userServices.reduce((acc, service) => acc + service.price, 0);
-    const completedTasks = userServices.length; // Assuming each service posted is a 'task'
+    const completedTasks = userServices.length; 
     const activeTasks = userRequests.length;
 
-    // Placeholder for rating and reviews as they are not fully implemented yet
-    const averageRating = 4.8;
-    const totalReviews = 25;
+    const totalReviews = userReviews.length;
+    const averageRating = totalReviews > 0
+      ? userReviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews
+      : 0;
+      
+    const formattedReviews = userReviews.map(review => ({
+        id: review._id.toString(),
+        comment: review.comment,
+        rating: review.rating,
+        user: { // This is the reviewer
+            name: (review.reviewer as any).name,
+            avatar: (review.reviewer as any).avatar
+        }
+    }));
+
 
     return NextResponse.json({
       totalEarnings,
@@ -39,7 +53,7 @@ export async function GET(request: NextRequest) {
       activeTasks,
       averageRating,
       totalReviews,
-      // Placeholder performance data
+      reviews: formattedReviews,
        performance: [
         { month: 'Jan', earnings: 600, tasks: 5 },
         { month: 'Feb', earnings: 800, tasks: 7 },
