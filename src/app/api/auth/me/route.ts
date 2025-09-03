@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import UserModel from '@/models/User';
+import { Types } from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     try {
       const decoded = jwt.verify(token, secret) as any;
 
-      const userFromDb = await UserModel.findById(decoded.id);
+      const userFromDb = await UserModel.findById(new Types.ObjectId(decoded.id));
 
       if (!userFromDb) {
         return NextResponse.json({ message: 'User not found' }, { status: 404 });
