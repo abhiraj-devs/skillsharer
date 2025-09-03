@@ -12,11 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { userProfile } from '@/lib/data';
 import { Star } from 'lucide-react';
 import AIProfileGenerator from '@/components/ai-profile-generator';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
-  const user = session?.user;
+  const { user } = useAuth();
 
   return (
     <div className="flex flex-col gap-8">

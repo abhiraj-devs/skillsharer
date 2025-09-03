@@ -1,7 +1,117 @@
 'use client';
-import { SessionProvider } from 'next-auth/react';
-import type { ReactNode } from 'react';
+import {
+  AuthContext,
+  type User,
+  login as loginService,
+  register as registerService,
+  getMe,
+} from '@/lib/auth';
+import { useRouter } from 'next/navigation';
+import {
+  useState,
+  useEffect,
+  type ReactNode,
+  useCallback,
+  useMemo,
+} from 'react';
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const router = useRouter();
+
+  const handleAuthRedirect = useCallback(
+    (path: string) => {
+      router.push(path);
+    },
+    [router]
+  );
+
+  const login = async (email: string, password: string): Promise<User> => {
+    setLoading(true);
+    try {
+      const loggedInUser = await loginService(email, password);
+      setUser(loggedInUser);
+      handleAuthRedirect('/');
+      return loggedInUser;
+    } catch (error) {
+      setUser(null);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (
+    email: string,
+    password: string
+  ): Promise<User> => {
+    setLoading(true);
+    try {
+      const registeredUser = await registerService(email, password);
+      setUser(registeredUser);
+      handleAuthRedirect('/');
+      return registeredUser;
+    } catch (error) {
+      setUser(null);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    setUser(null);
+    handleAuthRedirect('/auth');
+  }, [handleAuthRedirect]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      getMe()
+        .then((userData) => {
+          if (userData) {
+            setUser(userData);
+          } else {
+            logout();
+          }
+        })
+        .catch(() => {
+          logout(); // Also logout on error
+        })
+        .finally(() => {
+          setLoading(false);
+          setInitialLoad(false);
+        });
+    } else {
+      setLoading(false);
+      setInitialLoad(false);
+    }
+  }, [logout]);
+
+  const value = useMemo(
+    () => ({
+      user,
+      login,
+      logout,
+      register,
+      loading,
+      isAuthenticated: !!user,
+    }),
+    [user, login, logout, register, loading]
+  );
+
+  return (
+    <AuthContext.Provider value={value}>
+      {initialLoad ? (
+        <div className="flex h-screen w-full items-center justify-center">
+          {/* You might want a spinner here */}
+        </div>
+      ) : (
+        children
+      )}
+    </AuthContext.Provider>
+  );
 }

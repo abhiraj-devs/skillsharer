@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" {...props}>
@@ -47,27 +47,21 @@ export default function AuthPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { login, register } = useAuth();
 
-  const handleSignIn = async (provider: 'credentials' | 'google') => {
+  const handleSignIn = async () => {
     setLoading(true);
-    const callbackUrl = searchParams.get('callbackUrl') || '/';
-
-    const result = await signIn(provider, {
-      redirect: false,
-      email,
-      password,
-      callbackUrl,
-    });
-
-    if (result?.error) {
+    try {
+      await login(email, password);
+      const callbackUrl = searchParams.get('callbackUrl') || '/';
+      router.push(callbackUrl);
+    } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
-        description: result.error,
+        description: error.message || 'Failed to sign in.',
       });
       setLoading(false);
-    } else if (result?.url) {
-      router.push(result.url);
     }
   };
 
@@ -84,26 +78,13 @@ export default function AuthPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
-      }
-
-      toast({
+      await register(email, password);
+       toast({
         title: 'Registration Successful',
-        description: 'You can now log in with your credentials.',
+        description: 'You have been logged in.',
       });
-      // Automatically sign in after successful registration
-      await handleSignIn('credentials');
+      const callbackUrl = searchParams.get('callbackUrl') || '/';
+      router.push(callbackUrl);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -155,7 +136,7 @@ export default function AuthPage() {
             <CardFooter className="flex-col gap-4">
               <Button
                 className="w-full"
-                onClick={() => handleSignIn('credentials')}
+                onClick={handleSignIn}
                 disabled={loading}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -164,7 +145,7 @@ export default function AuthPage() {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => handleSignIn('google')}
+                onClick={() => {}}
                 disabled={true}
               >
                 <GoogleIcon className="mr-2 h-4 w-4" />

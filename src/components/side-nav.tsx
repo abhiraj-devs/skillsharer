@@ -24,8 +24,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useTheme } from 'next-themes';
 import { Button } from './ui/button';
-import { useSession, signOut } from 'next-auth/react';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 const navItems = [
   {
@@ -58,24 +57,7 @@ const navItems = [
 export default function SideNav() {
   const pathname = usePathname();
   const { setTheme, theme } = useTheme();
-  const { data: session, status } = useSession();
-  const { toast } = useToast();
-
-  const handleLogout = async () => {
-    try {
-      await signOut({ callbackUrl: '/auth' });
-      toast({
-        title: 'Logged Out',
-        description: 'You have been successfully logged out.',
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error logging out',
-        description: error.message,
-      });
-    }
-  };
+  const { user, logout, loading } = useAuth();
 
   return (
     <aside className="fixed bottom-0 left-0 z-50 w-full border-t bg-background/95 backdrop-blur-sm md:relative md:h-screen md:w-60 md:border-r md:border-t-0 md:bg-background">
@@ -135,28 +117,28 @@ export default function SideNav() {
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Button>
-          {status !== 'loading' &&
-            (session ? (
+          {!loading &&
+            (user ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 overflow-hidden">
                   <Avatar className="h-10 w-10">
                     <AvatarImage
-                      src={session.user?.image || `https://avatar.vercel.sh/${session.user?.email}`}
-                      alt={session.user?.name || 'User'}
+                      src={`https://avatar.vercel.sh/${user.email}`}
+                      alt={user.name || 'User'}
                       data-ai-hint="person"
                     />
                     <AvatarFallback>
-                      {session.user?.email?.charAt(0).toUpperCase()}
+                      {user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col overflow-hidden">
                     <p className="text-sm font-medium truncate">
-                      {session.user?.name || session.user?.email}
+                      {user.name || user.email}
                     </p>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={handleLogout}
+                      onClick={logout}
                       className="h-auto p-0 text-xs text-muted-foreground justify-start"
                     >
                       <LogOut className="mr-1 h-3 w-3" />
