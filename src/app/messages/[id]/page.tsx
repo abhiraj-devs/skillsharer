@@ -157,6 +157,15 @@ export default function ConversationPage() {
     setNewMessage(prev => prev + emojiObject.emoji);
   }
 
+  const formatToIST = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({
@@ -239,7 +248,7 @@ export default function ConversationPage() {
                             >
                                 <p className="text-sm">{message.text}</p>
                                 <p className="mt-1 text-right text-xs opacity-70">
-                                    {message.timestamp}
+                                    {formatToIST(message.timestamp)}
                                 </p>
                             </div>
 

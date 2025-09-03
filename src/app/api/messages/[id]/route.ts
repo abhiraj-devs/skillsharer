@@ -54,7 +54,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
                 id: msg._id.toString(),
                 text: msg.text,
                 senderId: msg.sender._id.toString(),
-                timestamp: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
+                timestamp: msg.timestamp, // Send raw timestamp
             }))
         };
 

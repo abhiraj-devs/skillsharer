@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
             id: msg._id.toString(),
             text: msg.text,
             senderId: msg.sender._id.toString(),
-            timestamp: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
+            timestamp: msg.timestamp, // Send raw timestamp
         }))
     }));
 
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
             id: newMessage._id.toString(),
             text: newMessage.text,
             senderId: senderId.toString(),
-            timestamp: new Date(newMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
+            timestamp: newMessage.timestamp, // Send raw timestamp
         }, { status: 201 });
 
     } catch (error) {

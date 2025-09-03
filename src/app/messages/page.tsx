@@ -55,6 +55,15 @@ export default function MessagesListPage() {
     return convo.participants.find(p => p.id !== user?.id);
   }
 
+  const formatToIST = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+
   const filteredConversations = useMemo(() => {
     return conversations.filter(convo => {
       const otherUser = getOtherUserInConvo(convo);
@@ -124,7 +133,7 @@ export default function MessagesListPage() {
                                         <div className="flex justify-between">
                                         <p className="font-semibold truncate">{otherUser.name}</p>
                                         <p className="text-xs text-muted-foreground shrink-0">
-                                            {lastMessage?.timestamp}
+                                            {lastMessage && formatToIST(lastMessage.timestamp)}
                                         </p>
                                         </div>
                                         <p className="text-sm text-muted-foreground truncate">
