@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { Textarea } from '@/components/ui/textarea';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" {...props}>
@@ -31,8 +32,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path
       fill="#4CAF50"
       d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.222 0-9.618-3.66-11.083-8.584l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
-    /
->
+    />
     <path
       fill="#1976D2"
       d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C42.015 35.938 44 30.338 44 24c0-1.341-.138-2.65-.389-3.917z"
@@ -41,9 +41,11 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function AuthPage() {
-  const [email, setEmail] = useState('test@example.com');
-  const [password, setPassword] = useState('password123');
-  const [confirmPassword, setConfirmPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [skills, setSkills] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -79,7 +81,7 @@ export default function AuthPage() {
     }
 
     try {
-      await register(email, password);
+      await register(email, password, name, skills);
        toast({
         title: 'Registration Successful',
         description: 'You have been logged in.',
@@ -165,6 +167,17 @@ export default function AuthPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="name-register">Full Name</Label>
+                <Input
+                  id="name-register"
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="email-register">Email</Label>
                 <Input
                   id="email-register"
@@ -194,6 +207,17 @@ export default function AuthPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={loading}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="skills-register">Skills</Label>
+                 <Textarea
+                    id="skills-register"
+                    placeholder="Enter skills, separated by commas"
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-muted-foreground">Separate skills with commas.</p>
               </div>
             </CardContent>
             <CardFooter>

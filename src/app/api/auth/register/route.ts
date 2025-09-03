@@ -5,12 +5,12 @@ import { users } from '@/lib/users';
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, name, skills } = await request.json();
     const secret = process.env.JWT_SECRET;
 
-    if (!email || !password) {
+    if (!email || !password || !name) {
       return NextResponse.json(
-        { message: 'Email and password are required' },
+        { message: 'Email, password, and name are required' },
         { status: 400 }
       );
     }
@@ -32,8 +32,8 @@ export async function POST(request: Request) {
       id: (users.length + 1).toString(),
       email,
       password, // Store hashed password
-      name: email.split('@')[0], // Simple name generation
-      skills: ['New User', 'Learner'],
+      name,
+      skills: skills ? skills.split(',').map((s: string) => s.trim()) : [],
     };
 
     users.push(newUser);

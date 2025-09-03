@@ -46,11 +46,13 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (
     email: string,
-    password: string
+    password: string,
+    name: string,
+    skills: string
   ): Promise<User> => {
     setLoading(true);
     try {
-      const registeredUser = await registerService(email, password);
+      const registeredUser = await registerService(email, password, name, skills);
       setUser(registeredUser);
       handleAuthRedirect('/');
       return registeredUser;
@@ -114,7 +116,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isAuthenticated: !!user,
     }),
-    [user, loading]
+    [user, loading, register]
   );
 
   return (
