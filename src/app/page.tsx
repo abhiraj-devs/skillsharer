@@ -8,21 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import { userProfile } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Activity,
-  DollarSign,
   Star,
   ListChecks,
   Loader2,
@@ -42,13 +31,11 @@ type Review = {
 };
 
 type DashboardData = {
-  totalEarnings: number;
   completedTasks: number;
   activeTasks: number;
   averageRating: number;
   totalReviews: number;
   reviews: Review[];
-  performance: { month: string; earnings: number; tasks: number }[];
 };
 
 
@@ -97,20 +84,11 @@ export default function Dashboard() {
   }
 
   const displayData = data || {
-    totalEarnings: 0,
     completedTasks: 0,
     activeTasks: 0,
     averageRating: 0,
     totalReviews: 0,
     reviews: [],
-    performance: [
-        { month: 'Jan', earnings: 0, tasks: 0 },
-        { month: 'Feb', earnings: 0, tasks: 0 },
-        { month: 'Mar', earnings: 0, tasks: 0 },
-        { month: 'Apr', earnings: 0, tasks: 0 },
-        { month: 'May', earnings: 0, tasks: 0 },
-        { month: 'Jun', earnings: 0, tasks: 0 },
-    ]
   };
 
 
@@ -122,21 +100,7 @@ export default function Dashboard() {
           Welcome back, {user?.name}! Here's a summary of your activity.
         </p>
       </header>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ₹{displayData.totalEarnings.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Based on your offered services
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -183,64 +147,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="font-headline">Monthly Performance</CardTitle>
-            <CardDescription>
-              Your earnings and tasks from offered services over the past 6 months.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[350px] w-full p-2">
-            <ResponsiveContainer>
-              <BarChart data={displayData.performance}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis
-                  yAxisId="left"
-                  dataKey="earnings"
-                  stroke="hsl(var(--primary))"
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `₹${value}`}
-                />
-                <YAxis
-                  yAxisId="right"
-                  dataKey="tasks"
-                  orientation="right"
-                  stroke="hsl(var(--accent))"
-                  tickLine={false}
-                  axisLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  cursor={{ fill: 'hsl(var(--muted))' }}
-                  contentStyle={{
-                    background: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 'var(--radius)',
-                  }}
-                />
-                <Legend />
-                <Bar
-                  yAxisId="left"
-                  dataKey="earnings"
-                  fill="hsl(var(--primary))"
-                  name="Earnings (₹)"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar
-                  yAxisId="right"
-                  dataKey="tasks"
-                  fill="hsl(var(--accent))"
-                  name="Tasks Completed"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Recent Reviews</CardTitle>

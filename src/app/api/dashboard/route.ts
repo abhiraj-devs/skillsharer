@@ -8,7 +8,6 @@ import RequestModel from '@/models/Request';
 import ReviewModel from '@/models/Review';
 import UserModel from '@/models/User';
 import { Types } from 'mongoose';
-import { subMonths, format } from 'date-fns';
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,47 +54,13 @@ export async function GET(request: NextRequest) {
         }
     }));
 
-    // --- Generate Monthly Performance Data ---
-    // This part can be enhanced later. For now, it uses dummy data or simple calculations.
-    const performanceData: { [key: string]: { earnings: number, tasks: number } } = {};
-    const monthLabels: { [key: string]: string } = {};
-    
-    for (let i = 5; i >= 0; i--) {
-        const date = subMonths(new Date(), i);
-        const monthKey = format(date, 'yyyy-MM');
-        const monthName = format(date, 'MMM');
-        performanceData[monthKey] = { earnings: 0, tasks: 0 };
-        monthLabels[monthKey] = monthName;
-    }
-    
-    // Placeholder for earnings calculation - could be based on services for now
-    userServices.forEach(item => {
-        const createdDate = item.createdAt;
-        if (createdDate) {
-            const monthKey = format(new Date(createdDate), 'yyyy-MM');
-            if (performanceData[monthKey]) {
-                performanceData[monthKey].earnings += item.price;
-                performanceData[monthKey].tasks += 1;
-            }
-        }
-    });
-
-    const performance = Object.keys(performanceData).map(key => ({
-        month: monthLabels[key],
-        ...performanceData[key]
-    })).slice(-6);
-
-    const totalEarnings = Object.values(performanceData).reduce((acc, month) => acc + month.earnings, 0);
-
 
     return NextResponse.json({
-      totalEarnings,
       completedTasks,
       activeTasks,
       averageRating,
       totalReviews,
       reviews: formattedReviews,
-      performance,
     });
 
   } catch (error) {
