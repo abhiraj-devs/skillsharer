@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     const completedTasks = userServices.length;
-    const activeTasks = userRequests.filter(r => r.status === 'open').length;
+    const activeTasks = userRequests.length;
 
     const totalReviews = userReviews.length;
     const averageRating = totalReviews > 0
@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // --- Generate Monthly Performance Data ---
+    // This part can be enhanced later. For now, it uses dummy data or simple calculations.
     const performanceData: { [key: string]: { earnings: number, tasks: number } } = {};
     const monthLabels: { [key: string]: string } = {};
     
@@ -66,15 +67,14 @@ export async function GET(request: NextRequest) {
         performanceData[monthKey] = { earnings: 0, tasks: 0 };
         monthLabels[monthKey] = monthName;
     }
-
-    const fulfilledRequests = await RequestModel.find({ solver: userId, status: 'fulfilled' });
-
-    fulfilledRequests.forEach(item => {
-        const completedDate = item.completedAt;
-        if (completedDate) {
-            const monthKey = format(new Date(completedDate), 'yyyy-MM');
+    
+    // Placeholder for earnings calculation - could be based on services for now
+    userServices.forEach(item => {
+        const createdDate = item.createdAt;
+        if (createdDate) {
+            const monthKey = format(new Date(createdDate), 'yyyy-MM');
             if (performanceData[monthKey]) {
-                performanceData[monthKey].earnings += item.budget;
+                performanceData[monthKey].earnings += item.price;
                 performanceData[monthKey].tasks += 1;
             }
         }
@@ -85,9 +85,11 @@ export async function GET(request: NextRequest) {
         ...performanceData[key]
     })).slice(-6);
 
+    const totalEarnings = Object.values(performanceData).reduce((acc, month) => acc + month.earnings, 0);
+
 
     return NextResponse.json({
-      totalEarnings: user.totalEarnings || 0,
+      totalEarnings,
       completedTasks,
       activeTasks,
       averageRating,

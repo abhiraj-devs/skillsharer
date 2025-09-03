@@ -12,33 +12,22 @@ export async function GET() {
     try {
         const requests = await RequestModel.find({})
             .populate({ path: 'user', model: UserModel, select: 'name avatar' })
-            .populate({ path: 'solver', model: UserModel, select: 'name avatar' })
             .sort({ createdAt: -1 });
 
         const formattedRequests = requests
           .filter(request => !!request.user) // Ensure the user exists
           .map(request => {
-            let solverData = null;
-            if (request.solver && typeof request.solver === 'object') {
-              solverData = {
-                id: (request.solver as any)._id.toString(),
-                name: (request.solver as any).name,
-                avatar: (request.solver as any).avatar,
-              }
-            }
             return {
               id: request._id.toString(),
               title: request.title,
               description: request.description,
               budget: request.budget,
               tags: request.tags,
-              status: request.status,
               user: {
                   id: request.user._id.toString(),
                   name: request.user.name,
                   avatar: request.user.avatar,
               },
-              solver: solverData,
             };
           });
 
@@ -78,7 +67,6 @@ export async function POST(request: NextRequest) {
             budget,
             tags: tags.split(',').map((tag: string) => tag.trim()),
             user: userId,
-            status: 'open',
         });
 
         await newRequest.save();
@@ -95,13 +83,11 @@ export async function POST(request: NextRequest) {
             description: createdRequest.description,
             budget: createdRequest.budget,
             tags: createdRequest.tags,
-            status: createdRequest.status,
             user: {
                 id: createdRequest.user._id.toString(),
                 name: createdRequest.user.name,
                 avatar: createdRequest.user.avatar,
             },
-            solver: null
         };
 
         return NextResponse.json(responseRequest, { status: 201 });
