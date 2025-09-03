@@ -207,6 +207,15 @@ export default function ProfilePage() {
     router.push('/auth');
   }
 
+  const handleServiceDeleted = (serviceId: string) => {
+    setServices(prev => prev.filter(s => s.id !== serviceId));
+  };
+
+  const handleServiceUpdated = (updatedService: Service) => {
+    setServices(prev => prev.map(s => s.id === updatedService.id ? updatedService : s));
+  };
+
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex justify-between items-center">
@@ -352,7 +361,12 @@ export default function ProfilePage() {
                   ) : services.length > 0 ? (
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {services.map((service) => (
-                            <ServiceCard key={service.id} service={service} />
+                            <ServiceCard 
+                              key={service.id} 
+                              service={service} 
+                              onServiceDeleted={handleServiceDeleted}
+                              onServiceUpdated={handleServiceUpdated}
+                            />
                         ))}
                     </div>
                   ) : (
