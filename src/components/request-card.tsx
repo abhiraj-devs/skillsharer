@@ -83,6 +83,7 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
   const { user } = useAuth();
   const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const form = useForm<z.infer<typeof requestFormSchema>>({
     resolver: zodResolver(requestFormSchema),
@@ -161,6 +162,7 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
         
         toast({ title: 'Success', description: 'Request deleted successfully.' });
         onRequestDeleted(request.id);
+        setIsDeleteDialogOpen(false);
 
      } catch(error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -195,7 +197,7 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
         <div className="flex justify-between items-start">
             <CardTitle className="font-headline text-lg pr-2">{request.title}</CardTitle>
             {user?.id === request.user.id && (
-                <AlertDialog>
+                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -204,23 +206,19 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <AlertDialogTrigger asChild>
-                                     <DropdownMenuItem>
-                                        <CheckCircle className="mr-2 h-4 w-4"/>
-                                        <span>Mark as Done</span>
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <DropdownMenuSeparator />
                                 <DialogTrigger asChild>
                                     <DropdownMenuItem>
                                         <Edit className="mr-2 h-4 w-4"/>
                                         <span>Edit</span>
                                     </DropdownMenuItem>
                                 </DialogTrigger>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteRequest}>
-                                    <Trash2 className="mr-2 h-4 w-4"/>
-                                    <span>Delete</span>
-                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4"/>
+                                        <span>Delete</span>
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
                             </DropdownMenuContent>
                         </DropdownMenu>
 
@@ -250,14 +248,14 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
                     </Dialog>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                        <AlertDialogTitle>Mark this request as done?</AlertDialogTitle>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This will permanently delete this request from the board. This action cannot be undone.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteRequest} className="bg-destructive hover:bg-destructive/90">Continue</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteRequest} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
