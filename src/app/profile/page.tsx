@@ -334,19 +334,6 @@ export default function ProfilePage() {
               )}
             </CardContent>
           </Card>
-           <Card>
-            <CardHeader>
-                <CardTitle className="font-headline text-lg">Credits</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">
-                    contact:
-                    <a href="mailto:abhirajcsecec@gmail.com" className="text-primary underline ml-1">
-                        abhirajcsecec@gmail.com
-                    </a>
-                </p>
-            </CardContent>
-           </Card>
         </div>
 
         <div className="lg:col-span-2 space-y-8">

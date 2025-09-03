@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -155,6 +156,11 @@ export default function SideNav() {
                 </Link>
               </Button>
             ))}
+             <p className="text-xs text-center text-muted-foreground mt-4">
+                <a href="mailto:abhirajcsecec@gmail.com" className="hover:text-primary hover:underline">
+                    contact:abhirajcsecec@gmail.com
+                </a>
+            </p>
         </div>
       </div>
     </aside>
