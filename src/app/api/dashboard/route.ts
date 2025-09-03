@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
 
 
     return NextResponse.json({
-      totalEarnings: user.totalEarnings,
+      totalEarnings: user.totalEarnings || 0,
       completedTasks,
       activeTasks,
       averageRating,
