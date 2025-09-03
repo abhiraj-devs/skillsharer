@@ -16,25 +16,29 @@ export async function GET() {
             .sort({ createdAt: -1 });
 
         const formattedRequests = requests
-          .filter(request => request.user) // Filter out requests with null users
-          .map(request => ({
-            id: request._id.toString(),
-            title: request.title,
-            description: request.description,
-            budget: request.budget,
-            tags: request.tags,
-            status: request.status,
-            user: {
-                id: request.user._id.toString(),
-                name: request.user.name,
-                avatar: request.user.avatar,
-            },
-            solver: request.solver ? {
+          .filter(request => !!request.user) // Ensure the user exists
+          .map(request => {
+            const solverData = request.solver && (request.solver as any)._id ? {
                 id: (request.solver as any)._id.toString(),
                 name: (request.solver as any).name,
                 avatar: (request.solver as any).avatar,
-            } : undefined,
-        }));
+            } : undefined;
+
+            return {
+              id: request._id.toString(),
+              title: request.title,
+              description: request.description,
+              budget: request.budget,
+              tags: request.tags,
+              status: request.status,
+              user: {
+                  id: request.user._id.toString(),
+                  name: request.user.name,
+                  avatar: request.user.avatar,
+              },
+              solver: solverData,
+            };
+          });
 
         return NextResponse.json(formattedRequests);
     } catch (error) {
