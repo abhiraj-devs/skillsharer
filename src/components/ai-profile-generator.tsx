@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/form';
 import { Loader2, Sparkles } from 'lucide-react';
 import { userProfile } from '@/lib/data';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   skills: z.string().min(10, 'Please list at least a few skills.'),
