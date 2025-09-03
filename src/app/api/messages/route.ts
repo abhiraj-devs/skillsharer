@@ -5,6 +5,7 @@ import { verifyJwt } from '@/lib/utils';
 import dbConnect from '@/lib/mongodb';
 import ConversationModel from '@/models/Conversation';
 import UserModel from '@/models/User';
+import { Types } from 'mongoose';
 
 // GET all conversations for the current user
 export async function GET(request: NextRequest) {
@@ -22,7 +23,11 @@ export async function GET(request: NextRequest) {
     const userId = decodedToken.id;
     const conversations = await ConversationModel.find({ participants: userId })
         .populate({ path: 'participants', model: UserModel, select: 'name avatar email' })
-        .populate({ path: 'messages.sender', model: UserModel, select: 'name avatar email' })
+        .populate({ 
+            path: 'messages.sender', 
+            model: UserModel, 
+            select: 'name avatar email' 
+        })
         .sort({ updatedAt: -1 });
 
     const formattedConversations = conversations.map(convo => ({
@@ -31,13 +36,13 @@ export async function GET(request: NextRequest) {
             id: p._id.toString(),
             name: p.name,
             avatar: p.avatar,
+            email: p.email
         })),
         messages: convo.messages.map((msg: any) => ({
             id: msg._id.toString(),
             text: msg.text,
             senderId: msg.sender._id.toString(),
             timestamp: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
-            // isSender is a client-side concern
         }))
     }));
 
@@ -58,7 +63,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'Invalid or expired token' }, { status: 401 });
     }
 
-    const senderId = decodedToken.id;
+    const senderId = new Types.ObjectId(decodedToken.id);
 
     try {
         const { conversationId, text } = await request.json();
@@ -72,11 +77,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Conversation not found' }, { status: 404 });
         }
 
-        if (!conversation.participants.includes(senderId)) {
+        if (!conversation.participants.some(p => p.equals(senderId))) {
              return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
         const newMessage = {
+            _id: new Types.ObjectId(),
             text,
             sender: senderId,
             timestamp: new Date(),
@@ -84,15 +90,14 @@ export async function POST(request: NextRequest) {
 
         conversation.messages.push(newMessage as any);
         await conversation.save();
-
-        const latestMessage = conversation.messages[conversation.messages.length - 1];
-
+        
         return NextResponse.json({
-            id: latestMessage._id.toString(),
-            text: latestMessage.text,
-            senderId: senderId,
-            timestamp: new Date(latestMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
+            id: newMessage._id.toString(),
+            text: newMessage.text,
+            senderId: senderId.toString(),
+            timestamp: new Date(newMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
         }, { status: 201 });
+
     } catch (error) {
         console.error(error);
         return NextResponse.json({ message: 'Error sending message' }, { status: 500 });

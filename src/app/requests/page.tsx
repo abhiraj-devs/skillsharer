@@ -126,6 +126,14 @@ export default function RequestsPage() {
     }
   };
 
+  const handleRequestDeleted = (requestId: string) => {
+    setRequests(prev => prev.filter(r => r.id !== requestId));
+  }
+
+  const handleRequestUpdated = (updatedRequest: Request) => {
+     setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -228,7 +236,12 @@ export default function RequestsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {requests.map((request) => (
-            <RequestCard key={request.id} request={request} />
+            <RequestCard 
+                key={request.id} 
+                request={request}
+                onRequestDeleted={handleRequestDeleted}
+                onRequestUpdated={handleRequestUpdated}
+            />
           ))}
         </div>
       )}
