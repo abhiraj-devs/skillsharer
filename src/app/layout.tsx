@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import SideNav from '@/components/side-nav';
 import { ThemeProvider } from '@/components/theme-provider';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
+import AuthWrapper from '@/components/auth-wrapper';
 
 export const metadata: Metadata = {
   title: 'StudentHub',
@@ -41,13 +43,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="relative flex min-h-screen w-full">
-            <SideNav />
-            <main className="flex-1 md:ml-60 pb-20 md:pb-0">
-              <div className="p-4 sm:p-6 lg:p-8">{children}</div>
-            </main>
-          </div>
-          <Toaster />
+          <AuthProvider>
+            <AuthWrapper>{children}</AuthWrapper>
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
