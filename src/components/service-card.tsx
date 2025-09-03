@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import type { Service } from '@/lib/data';
 import Image from 'next/image';
@@ -104,6 +103,21 @@ export function ServiceCard({ service, onServiceDeleted, onServiceUpdated }: Ser
         });
         if (!res.ok) throw new Error('Failed to start conversation');
         const { conversationId } = await res.json();
+        
+        // Send initial message with service title
+        const messageText = `I'm interested in your service: "${service.title}"`;
+        await fetch(`/api/messages`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+              conversationId: conversationId,
+              text: messageText,
+            }),
+        });
+        
         router.push(`/messages/${conversationId}`);
     } catch (error) {
         console.error(error);
