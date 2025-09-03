@@ -34,7 +34,6 @@ export async function POST(request: Request) {
     
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create a new user instance but don't save it yet
     const userToSave = new UserModel({
       email,
       password: hashedPassword,
@@ -42,23 +41,27 @@ export async function POST(request: Request) {
       skills: skills ? skills.split(',').map((s: string) => s.trim()) : [],
     });
 
-    // Save the user, which triggers the pre-save hook to generate the avatar
     const newUser = await userToSave.save();
 
 
-    const token = jwt.sign(
-        { id: newUser._id, name: newUser.name, email: newUser.email, skills: newUser.skills }, 
-        secret, 
-        { expiresIn: '1h' }
-    );
+    const tokenPayload = {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        skills: newUser.skills,
+    };
     
-    // Now newUser contains the avatar field from the database
+    const token = jwt.sign(tokenPayload, secret, {
+      expiresIn: '1h',
+    });
+    
     const userResponse = {
       id: newUser._id.toString(),
+      _id: newUser._id.toString(), // Ensure _id is also sent
       name: newUser.name,
       email: newUser.email,
       skills: newUser.skills,
-      image: newUser.avatar, // This will now be correctly included
+      image: newUser.avatar,
     };
 
     return NextResponse.json({ user: userResponse, token });
