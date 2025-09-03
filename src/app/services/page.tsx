@@ -2,9 +2,9 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { ServiceCard } from '@/components/service-card';
-import { type Service, type User } from '@/lib/data';
+import { type Service } from '@/lib/data';
 import { PlusCircle, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -51,29 +51,30 @@ export default function ServicesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/services');
-        if (!response.ok) {
-          throw new Error('Failed to fetch services');
-        }
-        const data = await response.json();
-        setServices(data);
-      } catch (error) {
-        console.error(error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not fetch services.',
-        });
-      } finally {
-        setLoading(false);
+  const fetchServices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/services');
+      if (!response.ok) {
+        throw new Error('Failed to fetch services');
       }
-    };
-    fetchServices();
+      const data = await response.json();
+      setServices(data);
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not fetch services.',
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [toast]);
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   const form = useForm<z.infer<typeof serviceFormSchema>>({
     resolver: zodResolver(serviceFormSchema),
@@ -94,11 +95,15 @@ export default function ServicesPage() {
       });
       return;
     }
+    const token = localStorage.getItem('token');
 
     try {
       const response = await fetch('/api/services', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(values),
       });
 

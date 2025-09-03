@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import type { Conversation, Message, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
@@ -23,31 +23,36 @@ export default function MessagesPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const fetchConversations = useCallback(async () => {
     if (!isAuthenticated) return;
-    const fetchConversations = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch('/api/messages');
-        if (!res.ok) throw new Error('Failed to fetch conversations');
-        const data = await res.json();
-        setConversations(data);
-        if (data.length > 0) {
-          setSelectedConversationId(data[0].id);
-        }
-      } catch (error) {
-        console.error(error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not load messages.' });
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/messages', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch conversations');
+      const data = await res.json();
+      setConversations(data);
+      if (data.length > 0 && !selectedConversationId) {
+        setSelectedConversationId(data[0].id);
       }
-    };
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not load messages.' });
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, toast, selectedConversationId]);
+
+
+  useEffect(() => {
     fetchConversations();
-  }, [isAuthenticated, toast]);
+  }, [fetchConversations]);
 
 
   const selectedConversation = useMemo(() => {
@@ -62,11 +67,15 @@ export default function MessagesPage() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() === '' || !selectedConversationId) return;
+    const token = localStorage.getItem('token');
 
     try {
       const res = await fetch(`/api/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({
           conversationId: selectedConversationId,
           text: newMessage,
@@ -75,7 +84,6 @@ export default function MessagesPage() {
       if (!res.ok) throw new Error('Failed to send message');
       const sentMessage = await res.json();
 
-      // Update the conversation in the state
       setConversations(prev =>
         prev.map(c =>
           c.id === selectedConversationId

@@ -1,19 +1,38 @@
 
 'use server'
 import { NextResponse, type NextRequest } from 'next/server';
-import { servicesData, type Service, type User } from '@/lib/data';
-import { users } from '@/lib/users';
 import { verifyJwt } from '@/lib/utils';
-
+import dbConnect from '@/lib/mongodb';
+import ServiceModel from '@/models/Service';
+import UserModel from '@/models/User';
 
 // GET all services
 export async function GET() {
-    // In a real app, you'd fetch from a DB
-    return NextResponse.json(servicesData.sort((a, b) => b.id - a.id));
+    await dbConnect();
+    const services = await ServiceModel.find({})
+      .populate({ path: 'user', model: UserModel, select: 'name avatar' })
+      .sort({ createdAt: -1 });
+
+    const formattedServices = services.map(service => ({
+        id: service._id.toString(),
+        title: service.title,
+        category: service.category,
+        price: service.price,
+        imageUrl: service.imageUrl,
+        rating: service.rating,
+        user: {
+            id: service.user._id.toString(),
+            name: service.user.name,
+            avatar: service.user.avatar,
+        }
+    }));
+
+    return NextResponse.json(formattedServices);
 }
 
 // POST a new service
 export async function POST(request: NextRequest) {
+    await dbConnect();
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -23,11 +42,8 @@ export async function POST(request: NextRequest) {
      if (!decodedToken || !decodedToken.id) {
         return NextResponse.json({ message: 'Invalid or expired token' }, { status: 401 });
     }
-
-    const currentUserRecord = users.find(u => u.id === decodedToken.id);
-    if (!currentUserRecord) {
-        return NextResponse.json({ message: 'User not found' }, { status: 404 });
-    }
+    
+    const userId = decodedToken.id;
 
     try {
         const body = await request.json();
@@ -37,25 +53,38 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
         }
 
-        const currentUser: User = {
-            id: currentUserRecord.id,
-            name: currentUserRecord.name,
-            avatar: `https://avatar.vercel.sh/${currentUserRecord.email}`
-        };
-
-        const newService: Service = {
-            id: servicesData.length + 1,
+        const newService = new ServiceModel({
             title,
             category,
             price,
             imageUrl,
-            rating: 0, // New services have no rating yet
-            user: currentUser,
+            user: userId,
+        });
+
+        await newService.save();
+        
+        // We need to populate the user to send it back in the correct format
+        const createdService = await ServiceModel.findById(newService._id).populate({ path: 'user', model: UserModel, select: 'name avatar' });
+
+        if (!createdService) {
+          throw new Error('Service creation failed');
+        }
+
+        const responseService = {
+           id: createdService._id.toString(),
+            title: createdService.title,
+            category: createdService.category,
+            price: createdService.price,
+            imageUrl: createdService.imageUrl,
+            rating: createdService.rating,
+            user: {
+                id: createdService.user._id.toString(),
+                name: createdService.user.name,
+                avatar: createdService.user.avatar,
+            }
         };
 
-        servicesData.push(newService);
-
-        return NextResponse.json(newService, { status: 201 });
+        return NextResponse.json(responseService, { status: 201 });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ message: 'Error creating service' }, { status: 500 });

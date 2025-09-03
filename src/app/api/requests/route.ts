@@ -1,18 +1,37 @@
 
 'use server'
 import { NextResponse, type NextRequest } from 'next/server';
-import { requestsData, type Request, type User } from '@/lib/data';
-import { users } from '@/lib/users';
 import { verifyJwt } from '@/lib/utils';
+import dbConnect from '@/lib/mongodb';
+import RequestModel from '@/models/Request';
+import UserModel from '@/models/User';
 
 // GET all requests
 export async function GET() {
-    // In a real app, you'd fetch from a DB
-    return NextResponse.json(requestsData.sort((a, b) => b.id - a.id));
+    await dbConnect();
+    const requests = await RequestModel.find({})
+        .populate({ path: 'user', model: UserModel, select: 'name avatar' })
+        .sort({ createdAt: -1 });
+
+    const formattedRequests = requests.map(request => ({
+        id: request._id.toString(),
+        title: request.title,
+        description: request.description,
+        budget: request.budget,
+        tags: request.tags,
+        user: {
+            id: request.user._id.toString(),
+            name: request.user.name,
+            avatar: request.user.avatar,
+        }
+    }));
+
+    return NextResponse.json(formattedRequests);
 }
 
 // POST a new request
 export async function POST(request: NextRequest) {
+    await dbConnect();
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -23,10 +42,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'Invalid or expired token' }, { status: 401 });
     }
     
-    const currentUserRecord = users.find(u => u.id === decodedToken.id);
-    if (!currentUserRecord) {
-        return NextResponse.json({ message: 'User not found' }, { status: 404 });
-    }
+    const userId = decodedToken.id;
 
     try {
         const body = await request.json();
@@ -36,24 +52,36 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
         }
         
-        const currentUser: User = {
-            id: currentUserRecord.id,
-            name: currentUserRecord.name,
-            avatar: `https://avatar.vercel.sh/${currentUserRecord.email}`
-        };
-
-        const newRequest: Request = {
-            id: requestsData.length + 1,
+        const newRequest = new RequestModel({
             title,
             description,
             budget,
             tags: tags.split(',').map((tag: string) => tag.trim()),
-            user: currentUser,
+            user: userId,
+        });
+
+        await newRequest.save();
+
+        const createdRequest = await RequestModel.findById(newRequest._id).populate({ path: 'user', model: UserModel, select: 'name avatar' });
+
+         if (!createdRequest) {
+          throw new Error('Request creation failed');
+        }
+
+        const responseRequest = {
+            id: createdRequest._id.toString(),
+            title: createdRequest.title,
+            description: createdRequest.description,
+            budget: createdRequest.budget,
+            tags: createdRequest.tags,
+            user: {
+                id: createdRequest.user._id.toString(),
+                name: createdRequest.user.name,
+                avatar: createdRequest.user.avatar,
+            }
         };
 
-        requestsData.push(newRequest);
-
-        return NextResponse.json(newRequest, { status: 201 });
+        return NextResponse.json(responseRequest, { status: 201 });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ message: 'Error creating request' }, { status: 500 });

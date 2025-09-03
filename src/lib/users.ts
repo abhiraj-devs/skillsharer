@@ -1,6 +1,6 @@
 
-// In a real application, you'd want to store and retrieve users from a database.
-// For this demo, we'll use a shared in-memory array that can be mutated.
+// This file is no longer needed as user data is now stored in MongoDB.
+// It is kept to avoid breaking existing imports, but it should not be used.
 
 export interface User {
     id: string;
@@ -10,12 +10,4 @@ export interface User {
     skills: string[];
 }
 
-export const users: User[] = [
-  {
-    id: '1',
-    name: 'Ben Carter',
-    email: 'test@example.com',
-    password: 'password123', // In a real app, this would be a hashed password
-    skills: ['React', 'Next.js', 'TypeScript', 'Node.js', 'Figma', 'UI/UX Design'],
-  },
-];
+export const users: User[] = [];

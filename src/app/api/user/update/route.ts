@@ -1,10 +1,13 @@
+
 'use server';
 import { NextResponse, type NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { users } from '@/lib/users';
+import dbConnect from '@/lib/mongodb';
+import UserModel from '@/models/User';
 
 export async function PUT(request: NextRequest) {
   try {
+    await dbConnect();
     const authHeader = request.headers.get('Authorization');
     const secret = process.env.JWT_SECRET;
 
@@ -36,13 +39,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const user = users.find((u) => u.id === decoded.id);
+    const user = await UserModel.findById(decoded.id);
 
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    // Update user properties if they exist in the request
     if (name) {
       user.name = name;
     }
@@ -50,11 +52,14 @@ export async function PUT(request: NextRequest) {
       user.skills = skills;
     }
 
+    await user.save();
+
     const userResponse = {
-      id: user.id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       skills: user.skills,
+      image: user.avatar
     };
     
     return NextResponse.json({ user: userResponse });

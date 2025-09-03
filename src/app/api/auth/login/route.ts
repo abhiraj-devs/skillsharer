@@ -1,10 +1,15 @@
+
 'use server';
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { users } from '@/lib/users';
+import bcrypt from 'bcryptjs';
+import dbConnect from '@/lib/mongodb';
+import UserModel from '@/models/User';
 
 export async function POST(request: Request) {
   try {
+    await dbConnect();
+
     const { email, password } = await request.json();
     const secret = process.env.JWT_SECRET;
 
@@ -19,26 +24,40 @@ export async function POST(request: Request) {
       throw new Error('JWT_SECRET is not defined in environment variables.');
     }
 
-    const user = users.find((user) => user.email === email);
+    const user = await UserModel.findOne({ email }).select('+password');
 
-    // In a real app, you would compare a hashed password.
-    if (!user || user.password !== password) {
+    if (!user) {
       return NextResponse.json(
         { message: 'Invalid credentials' },
         { status: 401 }
       );
     }
 
-    // Sign a token
-    const token = jwt.sign({ id: user.id, name: user.name, email: user.email, skills: user.skills }, secret, {
+    const isPasswordMatch = await bcrypt.compare(password, user.password!);
+    if (!isPasswordMatch) {
+         return NextResponse.json(
+            { message: 'Invalid credentials' },
+            { status: 401 }
+         );
+    }
+
+    const tokenPayload = {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        skills: user.skills,
+    };
+
+    const token = jwt.sign(tokenPayload, secret, {
       expiresIn: '1h',
     });
 
     const userResponse = {
-      id: user.id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
-      skills: user.skills
+      skills: user.skills,
+      image: user.avatar,
     };
 
     return NextResponse.json({ user: userResponse, token });

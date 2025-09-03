@@ -1,10 +1,13 @@
+
 'use server';
 import { NextResponse, type NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { users } from '@/lib/users';
+import dbConnect from '@/lib/mongodb';
+import UserModel from '@/models/User';
 
 export async function GET(request: NextRequest) {
   try {
+    await dbConnect();
     const authHeader = request.headers.get('Authorization');
     const secret = process.env.JWT_SECRET;
 
@@ -21,23 +24,23 @@ export async function GET(request: NextRequest) {
     try {
       const decoded = jwt.verify(token, secret) as any;
 
-      const userFromDb = users.find(u => u.id === decoded.id);
+      const userFromDb = await UserModel.findById(decoded.id);
 
       if (!userFromDb) {
         return NextResponse.json({ message: 'User not found' }, { status: 404 });
       }
       
       const user = {
-        id: userFromDb.id,
+        id: userFromDb._id.toString(),
         name: userFromDb.name,
         email: userFromDb.email,
         skills: userFromDb.skills,
+        image: userFromDb.avatar,
       };
 
       return NextResponse.json({ user });
 
     } catch (error) {
-      // This will catch errors like expired tokens
       return NextResponse.json(
         { message: 'Invalid or expired token' },
         { status: 401 }

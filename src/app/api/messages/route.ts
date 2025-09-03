@@ -1,12 +1,14 @@
 
 'use server'
 import { NextResponse, type NextRequest } from 'next/server';
-import { conversationsData, type Message } from '@/lib/data';
 import { verifyJwt } from '@/lib/utils';
-import { users } from '@/lib/users';
+import dbConnect from '@/lib/mongodb';
+import ConversationModel from '@/models/Conversation';
+import UserModel from '@/models/User';
 
 // GET all conversations for the current user
 export async function GET(request: NextRequest) {
+    await dbConnect();
     const authHeader = request.headers.get('Authorization');
      if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -18,15 +20,34 @@ export async function GET(request: NextRequest) {
     }
     
     const userId = decodedToken.id;
-    const userConversations = conversationsData.filter(convo => 
-        convo.participants.some(p => p.id === userId)
-    );
+    const conversations = await ConversationModel.find({ participants: userId })
+        .populate({ path: 'participants', model: UserModel, select: 'name avatar email' })
+        .populate({ path: 'messages.sender', model: UserModel, select: 'name avatar email' })
+        .sort({ updatedAt: -1 });
 
-    return NextResponse.json(userConversations);
+    const formattedConversations = conversations.map(convo => ({
+        id: convo._id.toString(),
+        participants: convo.participants.map((p: any) => ({
+            id: p._id.toString(),
+            name: p.name,
+            avatar: p.avatar,
+        })),
+        messages: convo.messages.map((msg: any) => ({
+            id: msg._id.toString(),
+            text: msg.text,
+            senderId: msg.sender._id.toString(),
+            timestamp: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
+            // isSender is a client-side concern
+        }))
+    }));
+
+
+    return NextResponse.json(formattedConversations);
 }
 
 // POST a new message to a conversation
 export async function POST(request: NextRequest) {
+    await dbConnect();
     const authHeader = request.headers.get('Authorization');
      if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -46,30 +67,32 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Missing conversationId or text' }, { status: 400 });
         }
 
-        const conversation = conversationsData.find(c => c.id === conversationId);
+        const conversation = await ConversationModel.findById(conversationId);
         if (!conversation) {
             return NextResponse.json({ message: 'Conversation not found' }, { status: 404 });
         }
 
-        // Check if user is part of the conversation
-        if (!conversation.participants.some(p => p.id === senderId)) {
+        if (!conversation.participants.includes(senderId)) {
              return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
-        const newMessage: Message = {
-            id: Date.now(),
+        const newMessage = {
             text,
-            senderId,
-            isSender: false, // This is determined on client-side
-            timestamp: new Date().toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-            }),
+            sender: senderId,
+            timestamp: new Date(),
         };
 
-        conversation.messages.push(newMessage);
+        conversation.messages.push(newMessage as any);
+        await conversation.save();
 
-        return NextResponse.json(newMessage, { status: 201 });
+        const latestMessage = conversation.messages[conversation.messages.length - 1];
+
+        return NextResponse.json({
+            id: latestMessage._id.toString(),
+            text: latestMessage.text,
+            senderId: senderId,
+            timestamp: new Date(latestMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
+        }, { status: 201 });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ message: 'Error sending message' }, { status: 500 });

@@ -65,20 +65,26 @@ export async function getMe(): Promise<User | null> {
     return null;
   }
 
-  const response = await fetch('/api/auth/me', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  try {
+    const response = await fetch('/api/auth/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  if (!response.ok) {
-    // This could happen if the token is expired
+    if (!response.ok) {
+      // This could happen if the token is expired or invalid
+      localStorage.removeItem('token');
+      return null;
+    }
+
+    const data = await response.json();
+    return data.user;
+  } catch (error) {
+    console.error("Error fetching user:", error);
     localStorage.removeItem('token');
     return null;
   }
-
-  const data = await response.json();
-  return data.user;
 }
 
 

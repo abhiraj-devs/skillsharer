@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { RequestCard } from '@/components/request-card';
 import { type Request } from '@/lib/data';
 import { PlusCircle, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -49,29 +49,30 @@ export default function RequestsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/requests');
-        if (!response.ok) {
-          throw new Error('Failed to fetch requests');
-        }
-        const data = await response.json();
-        setRequests(data);
-      } catch (error) {
-        console.error(error);
-         toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not fetch requests.',
-        });
-      } finally {
-        setLoading(false);
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/requests');
+      if (!response.ok) {
+        throw new Error('Failed to fetch requests');
       }
-    };
-    fetchRequests();
+      const data = await response.json();
+      setRequests(data);
+    } catch (error) {
+      console.error(error);
+       toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not fetch requests.',
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [toast]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const form = useForm<z.infer<typeof requestFormSchema>>({
     resolver: zodResolver(requestFormSchema),
@@ -92,11 +93,16 @@ export default function RequestsPage() {
       });
       return;
     }
+    
+     const token = localStorage.getItem('token');
 
      try {
       const response = await fetch('/api/requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(values),
       });
 
