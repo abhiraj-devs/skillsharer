@@ -1,3 +1,4 @@
+'use server';
 import { NextResponse } from 'next/server';
 
 // This is a mock implementation. In a real app, you'd use a database.
