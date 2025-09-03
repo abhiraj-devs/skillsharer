@@ -26,11 +26,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     try {
         const convo = await ConversationModel.findById(conversationId)
-            .populate({ path: 'participants', model: UserModel, select: 'name avatar email' })
+            .populate({ path: 'participants', model: UserModel, select: 'name avatar email lastSeen' })
             .populate({ 
                 path: 'messages.sender', 
                 model: UserModel, 
-                select: 'name avatar email' 
+                select: 'name avatar email lastSeen'
             });
 
         if (!convo) {
@@ -48,13 +48,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
                 id: p._id.toString(),
                 name: p.name,
                 avatar: p.avatar,
-                email: p.email
+                email: p.email,
+                lastSeen: p.lastSeen
             })),
             messages: convo.messages.map((msg: any) => ({
                 id: msg._id.toString(),
                 text: msg.text,
                 senderId: msg.sender._id.toString(),
-                timestamp: msg.timestamp, // Send raw timestamp
+                timestamp: msg.timestamp,
             }))
         };
 

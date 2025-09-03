@@ -41,6 +41,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useParams, useRouter } from 'next/navigation';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
+
 
 export default function ConversationPage() {
   const { user, isAuthenticated } = useAuth();
@@ -58,7 +60,7 @@ export default function ConversationPage() {
 
   const fetchConversation = useCallback(async () => {
     if (!isAuthenticated || !conversationId) return;
-    setLoading(true);
+    
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/messages/${conversationId}`, {
@@ -84,6 +86,10 @@ export default function ConversationPage() {
 
   useEffect(() => {
     fetchConversation();
+
+    const intervalId = setInterval(fetchConversation, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(intervalId);
   }, [fetchConversation]);
 
 
@@ -93,6 +99,20 @@ export default function ConversationPage() {
     e.preventDefault();
     if (newMessage.trim() === '' || !conversationId) return;
     const token = localStorage.getItem('token');
+    const tempId = `temp-${Date.now()}`;
+    const sentMessage: Message = {
+        id: tempId,
+        _id: tempId,
+        text: newMessage,
+        senderId: user!.id,
+        timestamp: new Date().toISOString(),
+        sender: user as User,
+        isSender: true,
+    };
+
+    setConversation(prev => prev ? ({ ...prev, messages: [...prev.messages, sentMessage] }) : null);
+    setNewMessage('');
+
 
     try {
       const res = await fetch(`/api/messages`, {
@@ -107,13 +127,17 @@ export default function ConversationPage() {
         }),
       });
       if (!res.ok) throw new Error('Failed to send message');
-      const sentMessage = await res.json();
+      const savedMessage = await res.json();
 
-      setConversation(prev => prev ? ({ ...prev, messages: [...prev.messages, sentMessage] }) : null);
-      setNewMessage('');
+       setConversation(prev => prev ? ({ 
+            ...prev, 
+            messages: prev.messages.map(m => m.id === tempId ? savedMessage : m) 
+        }) : null);
+
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not send message.' });
+       setConversation(prev => prev ? ({ ...prev, messages: prev.messages.filter(m => m.id !== tempId) }) : null);
     }
   };
 
@@ -173,7 +197,46 @@ export default function ConversationPage() {
         top: scrollAreaRef.current.scrollHeight,
       });
     }
-  }, [conversation?.messages]);
+  }, [conversation?.messages.length]); // Only trigger on message count change
+
+  const formatLastSeen = (dateString?: string) => {
+    if (!dateString) return null;
+    const lastSeenDate = new Date(dateString);
+    const now = new Date();
+    
+    // If last seen is within the last 5 minutes, consider "Online"
+    if (now.getTime() - lastSeenDate.getTime() < 5 * 60 * 1000) {
+        return <span className="text-green-500">Online</span>;
+    }
+    
+    if (isToday(lastSeenDate)) {
+        return `Last seen today at ${format(lastSeenDate, 'p')}`;
+    }
+    
+    if (isYesterday(lastSeenDate)) {
+        return `Last seen yesterday at ${format(lastSeenDate, 'p')}`;
+    }
+    
+    return `Last seen ${formatDistanceToNow(lastSeenDate)} ago`;
+  };
+  
+  // Update user's 'lastSeen' status
+  useEffect(() => {
+    const updateActivity = () => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetch('/api/user/active', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
+    };
+    // Update immediately and then every minute
+    updateActivity();
+    const activityInterval = setInterval(updateActivity, 60 * 1000); 
+
+    return () => clearInterval(activityInterval);
+  }, []);
 
   if (loading) {
     return (
@@ -214,7 +277,7 @@ export default function ConversationPage() {
                         <CardTitle className="font-headline text-lg">
                         {otherUser.name}
                         </CardTitle>
-                        <p className="text-sm text-muted-foreground">Online</p>
+                        <p className="text-sm text-muted-foreground">{formatLastSeen(otherUser.lastSeen)}</p>
                     </div>
                 </div>
             </CardHeader>
@@ -253,7 +316,7 @@ export default function ConversationPage() {
                                 </p>
                             </div>
 
-                            {isSender && (
+                            {isSender && message.text !== 'This message was deleted' && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">

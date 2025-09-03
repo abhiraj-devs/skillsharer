@@ -7,6 +7,7 @@ export interface IUser extends Document {
   password?: string;
   skills: string[];
   avatar: string;
+  lastSeen: Date;
 }
 
 const UserSchema: Schema<IUser> = new Schema({
@@ -14,7 +15,8 @@ const UserSchema: Schema<IUser> = new Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true, select: false },
   skills: { type: [String], default: [] },
-  avatar: { type: String }
+  avatar: { type: String },
+  lastSeen: { type: Date, default: Date.now }
 });
 
 // Pre-save hook to generate avatar URL
