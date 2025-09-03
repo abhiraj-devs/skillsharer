@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import {
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from 'react-google-recaptcha-v3';
+
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" {...props}>
@@ -39,7 +44,8 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export default function AuthPage() {
+
+function AuthForm() {
   const [identifier, setIdentifier] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,6 +57,21 @@ export default function AuthPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { login, register } = useAuth();
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
+  const handleRecaptcha = useCallback(async () => {
+    if (!executeRecaptcha) {
+      console.log('Execute recaptcha not yet available');
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Recaptcha not ready. Please try again in a moment.',
+      });
+      return null;
+    }
+    return executeRecaptcha('auth_action');
+  }, [executeRecaptcha, toast]);
+
 
   const validatePassword = (pass: string) => {
     const strongPasswordRegex = new RegExp(
@@ -68,8 +89,13 @@ export default function AuthPage() {
 
   const handleSignIn = async () => {
     setLoading(true);
+    const recaptchaToken = await handleRecaptcha();
+    if (!recaptchaToken) {
+      setLoading(false);
+      return;
+    }
     try {
-      await login(identifier, password);
+      await login(identifier, password, recaptchaToken);
       const callbackUrl = searchParams.get('callbackUrl') || '/';
       router.push(callbackUrl);
     } catch (error: any) {
@@ -96,8 +122,13 @@ export default function AuthPage() {
     }
     
     setLoading(true);
+    const recaptchaToken = await handleRecaptcha();
+     if (!recaptchaToken) {
+      setLoading(false);
+      return;
+    }
     try {
-      await register(email, password);
+      await register(email, password, recaptchaToken);
        toast({
         title: 'Registration Successful',
         description: 'You have been logged in. You can now update your profile.',
@@ -259,4 +290,29 @@ export default function AuthPage() {
       </Tabs>
     </div>
   );
+}
+
+
+export default function AuthPage() {
+    // IMPORTANT: Add your site key to a .env.local file
+    const recaptchaKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    
+    if (!recaptchaKey) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-background text-destructive p-8">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold">reCAPTCHA Not Configured</h1>
+                    <p>
+                        Please add your <code className="font-mono bg-muted p-1 rounded-sm">NEXT_PUBLIC_RECAPTCHA_SITE_KEY</code> to your environment variables to enable authentication.
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <GoogleReCaptchaProvider reCaptchaKey={recaptchaKey}>
+            <AuthForm />
+        </GoogleReCaptchaProvider>
+    );
 }

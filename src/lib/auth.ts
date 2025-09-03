@@ -11,14 +11,15 @@ export interface User {
 
 export async function login(
   identifier: string,
-  password: string
+  password: string,
+  recaptchaToken: string,
 ): Promise<User> {
   const response = await fetch('/api/auth/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ identifier, password }),
+    body: JSON.stringify({ identifier, password, recaptchaToken }),
   });
 
   const data = await response.json();
@@ -36,14 +37,15 @@ export async function login(
 
 export async function register(
   email: string,
-  password: string
+  password: string,
+  recaptchaToken: string,
 ): Promise<User> {
   const response = await fetch('/api/auth/register', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, recaptchaToken }),
   });
 
   const data = await response.json();
