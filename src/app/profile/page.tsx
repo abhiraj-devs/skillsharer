@@ -10,7 +10,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { userProfile } from '@/lib/data';
+import { type Service, userProfile } from '@/lib/data';
 import { Edit, Save, Star, X, Loader2 } from 'lucide-react';
 import AIProfileGenerator from '@/components/ai-profile-generator';
 import { useAuth } from '@/hooks/use-auth';
@@ -24,6 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { ServiceCard } from '@/components/service-card';
 
 type Review = {
   id: string;
@@ -58,6 +59,9 @@ export default function ProfilePage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewStats, setReviewStats] = useState({ average: 0, count: 0 });
   const [loadingReviews, setLoadingReviews] = useState(true);
+  
+  const [services, setServices] = useState<Service[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
 
   const reviewForm = useForm<z.infer<typeof reviewSchema>>({
     resolver: zodResolver(reviewSchema),
@@ -74,8 +78,26 @@ export default function ProfilePage() {
       setSkills(user.skills?.join(', ') || '');
       setBio(user.bio || '');
       fetchReviews(user.id);
+      fetchUserServices(user.id);
     }
   }, [user]);
+
+  const fetchUserServices = useCallback(async (userId: string) => {
+    setLoadingServices(true);
+    try {
+        const res = await fetch(`/api/services`);
+        if (!res.ok) throw new Error('Failed to fetch services.');
+        const allServices = await res.json();
+        // Filter services by the current user
+        const userServices = allServices.filter((service: Service) => service.user.id === userId);
+        setServices(userServices);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load your services.' });
+    } finally {
+        setLoadingServices(false);
+    }
+  }, [toast]);
+
 
   const fetchReviews = useCallback(async (userId: string) => {
     setLoadingReviews(true);
@@ -315,30 +337,27 @@ export default function ProfilePage() {
               <AIProfileGenerator />
             </TabsContent>
             <TabsContent value="tasks" className="mt-4">
-              <Card>
+               <Card>
                 <CardHeader>
                   <CardTitle className="font-headline">
-                    Completed Task History
+                    Your Offered Services
                   </CardTitle>
                   <CardDescription>
-                    A record of all the services you've provided and requests
-                    you've fulfilled.
+                    A record of all the services you've offered to the community.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-4">
-                    {userProfile.completedTasks.map((task) => (
-                      <li
-                        key={task.id}
-                        className="flex items-center justify-between rounded-md border p-4"
-                      >
-                        <p className="font-medium">{task.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {task.date}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
+                  {loadingServices ? (
+                    <div className="flex justify-center"><Loader2 className="animate-spin" /></div>
+                  ) : services.length > 0 ? (
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {services.map((service) => (
+                            <ServiceCard key={service.id} service={service} />
+                        ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-center text-muted-foreground py-4">You haven't offered any services yet.</p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

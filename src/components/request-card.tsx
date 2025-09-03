@@ -15,12 +15,13 @@ import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { MoreVertical, Edit, Trash2, Loader2 } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, Loader2, CheckCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -171,18 +172,23 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                                <AlertDialogTrigger asChild>
+                                     <DropdownMenuItem>
+                                        <CheckCircle className="mr-2 h-4 w-4"/>
+                                        <span>Mark as Done</span>
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <DropdownMenuSeparator />
                                 <DialogTrigger asChild>
                                     <DropdownMenuItem>
                                         <Edit className="mr-2 h-4 w-4"/>
                                         <span>Edit</span>
                                     </DropdownMenuItem>
                                 </DialogTrigger>
-                                 <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4"/>
-                                        <span>Delete</span>
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteRequest}>
+                                    <Trash2 className="mr-2 h-4 w-4"/>
+                                    <span>Delete</span>
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
 
@@ -212,10 +218,9 @@ export function RequestCard({ request, onRequestDeleted, onRequestUpdated }: Req
                     </Dialog>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Mark this request as done?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete your request
-                            and remove your data from our servers.
+                            This will permanently delete this request from the board. This action cannot be undone.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
