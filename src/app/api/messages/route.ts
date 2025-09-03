@@ -103,3 +103,54 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'Error sending message' }, { status: 500 });
     }
 }
+
+export async function DELETE(request: NextRequest) {
+    await dbConnect();
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    const token = authHeader.split(' ')[1];
+    const decodedToken = verifyJwt(token);
+    if (!decodedToken || !decodedToken.id) {
+        return NextResponse.json({ message: 'Invalid or expired token' }, { status: 401 });
+    }
+
+    const userId = new Types.ObjectId(decodedToken.id);
+
+    try {
+        const { conversationId, messageId } = await request.json();
+
+        if (!conversationId || !messageId) {
+            return NextResponse.json({ message: 'Missing conversationId or messageId' }, { status: 400 });
+        }
+
+        const conversation = await ConversationModel.findById(conversationId);
+        if (!conversation) {
+            return NextResponse.json({ message: 'Conversation not found' }, { status: 404 });
+        }
+        
+        const messageIndex = conversation.messages.findIndex(m => m._id.toString() === messageId);
+        if (messageIndex === -1) {
+            return NextResponse.json({ message: 'Message not found' }, { status: 404 });
+        }
+        
+        const message = conversation.messages[messageIndex];
+        // Ensure the user deleting the message is the one who sent it
+        if (message.sender.toString() !== userId.toString()) {
+            return NextResponse.json({ message: 'Forbidden: You can only delete your own messages.' }, { status: 403 });
+        }
+        
+        // Update message text instead of deleting the object
+        conversation.messages[messageIndex].text = "This message was deleted";
+        conversation.markModified('messages'); // Important: tell Mongoose the array has changed
+
+        await conversation.save();
+        
+        return NextResponse.json({ success: true, messageId, conversationId });
+
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ message: 'Error deleting message' }, { status: 500 });
+    }
+}

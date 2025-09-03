@@ -103,11 +103,14 @@ export default function Dashboard() {
     averageRating: 0,
     totalReviews: 0,
     reviews: [],
-    performance: userProfile.completedTasks.map((_, i) => ({ // Use a static fallback
-        month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
-        earnings: Math.floor(Math.random() * 1000) + 500,
-        tasks: Math.floor(Math.random() * 10) + 1,
-    }))
+    performance: [
+        { month: 'Jan', earnings: 0, tasks: 0 },
+        { month: 'Feb', earnings: 0, tasks: 0 },
+        { month: 'Mar', earnings: 0, tasks: 0 },
+        { month: 'Apr', earnings: 0, tasks: 0 },
+        { month: 'May', earnings: 0, tasks: 0 },
+        { month: 'Jun', earnings: 0, tasks: 0 },
+    ]
   };
 
 
@@ -185,7 +188,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="font-headline">Monthly Performance</CardTitle>
             <CardDescription>
-              Your earnings and completed tasks over the past 6 months (static).
+              Your earnings and tasks from offered services over the past 6 months.
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[350px] w-full p-2">
@@ -194,17 +197,21 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
                 <YAxis
-                  yAxisId="earnings"
+                  yAxisId="left"
+                  dataKey="earnings"
                   stroke="hsl(var(--primary))"
                   tickLine={false}
                   axisLine={false}
+                  tickFormatter={(value) => `₹${value}`}
                 />
                 <YAxis
-                  yAxisId="tasks"
+                  yAxisId="right"
+                  dataKey="tasks"
                   orientation="right"
                   stroke="hsl(var(--accent))"
                   tickLine={false}
                   axisLine={false}
+                  allowDecimals={false}
                 />
                 <Tooltip
                   cursor={{ fill: 'hsl(var(--muted))' }}
@@ -216,14 +223,14 @@ export default function Dashboard() {
                 />
                 <Legend />
                 <Bar
-                  yAxisId="earnings"
+                  yAxisId="left"
                   dataKey="earnings"
                   fill="hsl(var(--primary))"
                   name="Earnings (₹)"
                   radius={[4, 4, 0, 0]}
                 />
                 <Bar
-                  yAxisId="tasks"
+                  yAxisId="right"
                   dataKey="tasks"
                   fill="hsl(var(--accent))"
                   name="Tasks Completed"

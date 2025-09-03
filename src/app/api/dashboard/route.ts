@@ -7,6 +7,7 @@ import ServiceModel from '@/models/Service';
 import RequestModel from '@/models/Request';
 import ReviewModel from '@/models/Review';
 import { Types } from 'mongoose';
+import { subMonths, format } from 'date-fns';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,11 +24,14 @@ export async function GET(request: NextRequest) {
 
     const userId = new Types.ObjectId(decodedToken.id);
 
-    const userServices = await ServiceModel.find({ user: userId });
-    const userRequests = await RequestModel.find({ user: userId });
-    const userReviews = await ReviewModel.find({ user: userId }).populate('reviewer', 'name avatar');
+    // Fetch all data in parallel
+    const [userServices, userRequests, userReviews] = await Promise.all([
+      ServiceModel.find({ user: userId }),
+      RequestModel.find({ user: userId }),
+      ReviewModel.find({ user: userId }).populate('reviewer', 'name avatar')
+    ]);
 
-    const totalEarnings = userServices.reduce((acc, service) => acc + service.price, 0);
+    const totalEarnings = userServices.reduce((acc, service) => acc + (service.price || 0), 0);
     const completedTasks = userServices.length; 
     const activeTasks = userRequests.length;
 
@@ -46,6 +50,35 @@ export async function GET(request: NextRequest) {
         }
     }));
 
+    // --- Generate Monthly Performance Data ---
+    const performanceData: { [key: string]: { earnings: number, tasks: number } } = {};
+    const monthLabels: { [key: string]: string } = {};
+    
+    // Initialize last 6 months
+    for (let i = 5; i >= 0; i--) {
+        const date = subMonths(new Date(), i);
+        const monthKey = format(date, 'yyyy-MM');
+        const monthName = format(date, 'MMM');
+        performanceData[monthKey] = { earnings: 0, tasks: 0 };
+        monthLabels[monthKey] = monthName;
+    }
+
+    // Process services
+    userServices.forEach(service => {
+        if (service.createdAt) {
+            const monthKey = format(new Date(service.createdAt), 'yyyy-MM');
+            if (performanceData[monthKey]) {
+                performanceData[monthKey].earnings += service.price;
+                performanceData[monthKey].tasks += 1;
+            }
+        }
+    });
+
+    const performance = Object.keys(performanceData).map(key => ({
+        month: monthLabels[key],
+        ...performanceData[key]
+    })).slice(-6); // Ensure only last 6 months are sent
+
 
     return NextResponse.json({
       totalEarnings,
@@ -54,14 +87,7 @@ export async function GET(request: NextRequest) {
       averageRating,
       totalReviews,
       reviews: formattedReviews,
-       performance: [
-        { month: 'Jan', earnings: 600, tasks: 5 },
-        { month: 'Feb', earnings: 800, tasks: 7 },
-        { month: 'Mar', earnings: 750, tasks: 6 },
-        { month: 'Apr', earnings: 1200, tasks: 9 },
-        { month: 'May', earnings: 900, tasks: 8 },
-        { month: 'Jun', earnings: 1500, tasks: 11 },
-      ],
+      performance,
     });
 
   } catch (error) {

@@ -9,6 +9,8 @@ export interface IService extends Document {
     imageUrl: string;
     rating: number;
     user: Types.ObjectId | IUser;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 const ServiceSchema: Schema<IService> = new Schema({
