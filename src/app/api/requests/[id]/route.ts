@@ -13,8 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     await dbConnect();
     try {
         const requestDoc = await RequestModel.findById(params.id)
-          .populate({ path: 'user', model: UserModel, select: 'name avatar' })
-          .populate({ path: 'solver', model: UserModel, select: 'name avatar' });
+          .populate({ path: 'user', model: UserModel, select: 'name avatar' });
 
         if (!requestDoc) {
             return NextResponse.json({ message: 'Request not found' }, { status: 404 });
@@ -64,8 +63,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         await requestToUpdate.save();
         
         const updatedRequest = await RequestModel.findById(requestToUpdate._id)
-            .populate({ path: 'user', model: UserModel, select: 'name avatar' })
-            .populate({ path: 'solver', model: UserModel, select: 'name avatar' });
+            .populate({ path: 'user', model: UserModel, select: 'name avatar' });
 
 
          if (!updatedRequest) {
@@ -78,17 +76,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             description: updatedRequest.description,
             budget: updatedRequest.budget,
             tags: updatedRequest.tags,
-            status: updatedRequest.status,
             user: {
                 id: updatedRequest.user._id.toString(),
                 name: updatedRequest.user.name,
                 avatar: updatedRequest.user.avatar,
             },
-            solver: updatedRequest.solver ? {
-              id: (updatedRequest.solver as any)._id.toString(),
-              name: (updatedRequest.solver as any).name,
-              avatar: (updatedRequest.solver as any).avatar,
-            } : undefined
         };
 
         return NextResponse.json(responseRequest);
