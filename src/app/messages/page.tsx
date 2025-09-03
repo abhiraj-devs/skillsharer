@@ -1,14 +1,13 @@
 'use client';
-import { useState } from 'react';
-import { conversationsData } from '@/lib/data';
-import type { Conversation } from '@/lib/data';
+import { useState, useRef, useEffect } from 'react';
+import { conversationsData as initialConversations } from '@/lib/data';
+import type { Conversation, Message } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -18,8 +17,52 @@ import { cn } from '@/lib/utils';
 import { Search, Send } from 'lucide-react';
 
 export default function MessagesPage() {
+  const [conversations, setConversations] = useState(initialConversations);
   const [selectedConversation, setSelectedConversation] =
-    useState<Conversation>(conversationsData[0]);
+    useState<Conversation>(conversations[0]);
+  const [newMessage, setNewMessage] = useState('');
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newMessage.trim() === '') return;
+
+    const message: Message = {
+      id: Date.now(),
+      text: newMessage,
+      isSender: true,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+
+    const updatedConversation: Conversation = {
+      ...selectedConversation,
+      messages: [...selectedConversation.messages, message],
+      lastMessage: newMessage,
+      lastMessageTime: 'Just now',
+    };
+
+    setSelectedConversation(updatedConversation);
+
+    setConversations(
+      conversations.map((c) =>
+        c.id === updatedConversation.id ? updatedConversation : c
+      )
+    );
+
+    setNewMessage('');
+  };
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [selectedConversation.messages]);
 
   return (
     <div className="h-[calc(100vh-8rem)]">
@@ -43,34 +86,40 @@ export default function MessagesPage() {
           <ScrollArea className="flex-1">
             <CardContent className="p-0">
               <div className="space-y-1">
-                {conversationsData.map((convo) => (
-                  <button
-                    key={convo.id}
-                    className={cn(
-                      'flex w-full cursor-pointer items-start gap-3 p-4 text-left transition-colors hover:bg-muted',
-                      selectedConversation.id === convo.id && 'bg-muted'
-                    )}
-                    onClick={() => setSelectedConversation(convo)}
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={convo.user.avatar} alt={convo.user.name} data-ai-hint="person" />
-                      <AvatarFallback>
-                        {convo.user.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <p className="font-semibold">{convo.user.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {convo.lastMessageTime}
+                {conversations
+                  .sort((a, b) => (b.lastMessageTime === 'Just now' ? 1 : -1))
+                  .map((convo) => (
+                    <button
+                      key={convo.id}
+                      className={cn(
+                        'flex w-full cursor-pointer items-start gap-3 p-4 text-left transition-colors hover:bg-muted',
+                        selectedConversation.id === convo.id && 'bg-muted'
+                      )}
+                      onClick={() => setSelectedConversation(convo)}
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage
+                          src={convo.user.avatar}
+                          alt={convo.user.name}
+                          data-ai-hint="person"
+                        />
+                        <AvatarFallback>
+                          {convo.user.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex justify-between">
+                          <p className="font-semibold">{convo.user.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {convo.lastMessageTime}
+                          </p>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {convo.lastMessage}
                         </p>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {convo.lastMessage}
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))}
               </div>
             </CardContent>
           </ScrollArea>
@@ -99,7 +148,7 @@ export default function MessagesPage() {
                   </div>
                 </div>
               </CardHeader>
-              <ScrollArea className="flex-1 p-4">
+              <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
                 <div className="space-y-4">
                   {selectedConversation.messages.map((message) => (
                     <div
@@ -109,11 +158,17 @@ export default function MessagesPage() {
                         message.isSender ? 'justify-end' : 'justify-start'
                       )}
                     >
+                      {!message.isSender && (
+                         <Avatar className="h-8 w-8">
+                          <AvatarImage src={selectedConversation.user.avatar} alt={selectedConversation.user.name} />
+                          <AvatarFallback>{selectedConversation.user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      )}
                       <div
                         className={cn(
                           'max-w-xs rounded-lg p-3 lg:max-w-md',
                           message.isSender
-                            ? 'bg-primary/90 text-primary-foreground'
+                            ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
                         )}
                       >
@@ -127,9 +182,15 @@ export default function MessagesPage() {
                 </div>
               </ScrollArea>
               <CardFooter className="border-t pt-4">
-                <div className="relative w-full">
-                  <Input placeholder="Type a message..." className="pr-12" />
+                <form onSubmit={handleSendMessage} className="relative w-full">
+                  <Input
+                    placeholder="Type a message..."
+                    className="pr-12"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                  />
                   <Button
+                    type="submit"
                     size="icon"
                     variant="ghost"
                     className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
@@ -137,7 +198,7 @@ export default function MessagesPage() {
                     <Send className="h-4 w-4" />
                     <span className="sr-only">Send message</span>
                   </Button>
-                </div>
+                </form>
               </CardFooter>
             </>
           ) : (

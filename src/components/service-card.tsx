@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star } from 'lucide-react';
+import Link from 'next/link';
 
 type ServiceCardProps = {
   service: Service;
@@ -34,10 +35,12 @@ export function ServiceCard({ service }: ServiceCardProps) {
           <CardTitle className="font-headline text-lg line-clamp-2">
             {service.title}
           </CardTitle>
-          <div className="flex shrink-0 items-center gap-1 text-sm font-semibold text-amber-500">
-            <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-            <span>{service.rating.toFixed(1)}</span>
-          </div>
+          {service.rating > 0 && (
+            <div className="flex shrink-0 items-center gap-1 text-sm font-semibold text-amber-500">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+              <span>{service.rating.toFixed(1)}</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 pt-1">
           <Avatar className="h-6 w-6">
@@ -66,10 +69,12 @@ export function ServiceCard({ service }: ServiceCardProps) {
           ₹{service.price.toLocaleString()}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            Exchange
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/messages">Exchange</Link>
           </Button>
-          <Button size="sm">Buy</Button>
+          <Button size="sm" asChild>
+            <Link href="/messages">Buy</Link>
+          </Button>
         </div>
       </CardFooter>
     </Card>

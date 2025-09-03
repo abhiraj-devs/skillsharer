@@ -10,7 +10,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tag } from 'lucide-react';
+import Link from 'next/link';
 
 type RequestCardProps = {
   request: Request;
@@ -49,7 +49,9 @@ export function RequestCard({ request }: RequestCardProps) {
         <div className="text-sm font-semibold text-primary">
           Budget: ₹{request.budget.toLocaleString()}
         </div>
-        <Button>Offer Help</Button>
+        <Button asChild>
+          <Link href="/messages">Offer Help</Link>
+        </Button>
       </CardFooter>
     </Card>
   );

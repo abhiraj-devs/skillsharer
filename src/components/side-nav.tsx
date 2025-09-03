@@ -9,6 +9,8 @@ import {
   MessageSquare,
   User,
   PencilRuler,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -19,6 +21,8 @@ import {
 } from './ui/tooltip';
 import { userProfile } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { useTheme } from 'next-themes';
+import { Button } from './ui/button';
 
 const navItems = [
   {
@@ -50,6 +54,7 @@ const navItems = [
 
 export default function SideNav() {
   const pathname = usePathname();
+  const { setTheme, theme } = useTheme();
 
   return (
     <aside className="fixed bottom-0 left-0 z-50 w-full border-t bg-background/95 backdrop-blur-sm md:relative md:h-screen md:w-60 md:border-r md:border-t-0 md:bg-background">
@@ -98,7 +103,17 @@ export default function SideNav() {
             </ul>
           </TooltipProvider>
         </nav>
-        <div className="hidden md:block border-t p-4">
+        <div className="hidden md:flex flex-col gap-4 border-t p-4">
+           <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="w-full"
+            >
+              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Toggle theme</span>
+            </Button>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 overflow-hidden">
               <Avatar className="h-10 w-10">

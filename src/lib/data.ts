@@ -1,4 +1,3 @@
-
 export type User = {
   name: string;
   avatar: string;
@@ -73,10 +72,19 @@ export type DashboardData = {
 };
 
 const users = {
-  currentUser: { name: 'Alex Doe', avatar: 'https://picsum.photos/seed/alex/100' },
+  currentUser: {
+    name: 'Alex Doe',
+    avatar: 'https://picsum.photos/seed/alex/100',
+  },
   user1: { name: 'Ben Carter', avatar: 'https://picsum.photos/seed/ben/100' },
-  user2: { name: 'Chloe Davis', avatar: 'https://picsum.photos/seed/chloe/100' },
-  user3: { name: 'David Evans', avatar: 'https://picsum.photos/seed/david/100' },
+  user2: {
+    name: 'Chloe Davis',
+    avatar: 'https://picsum.photos/seed/chloe/100',
+  },
+  user3: {
+    name: 'David Evans',
+    avatar: 'https://picsum.photos/seed/david/100',
+  },
   user4: { name: 'Sarah Lee', avatar: 'https://picsum.photos/seed/sarah/100' },
 };
 
@@ -132,7 +140,8 @@ export const requestsData: Request[] = [
   {
     id: 1,
     title: 'Need help with a presentation design',
-    description: 'Looking for someone to help me create a visually appealing PowerPoint presentation for my class project. It has about 15 slides. I have the content ready.',
+    description:
+      'Looking for someone to help me create a visually appealing PowerPoint presentation for my class project. It has about 15 slides. I have the content ready.',
     budget: 80,
     tags: ['PowerPoint', 'Design', 'Presentation'],
     user: users.user2,
@@ -140,7 +149,8 @@ export const requestsData: Request[] = [
   {
     id: 2,
     title: 'Simple React component bug fix',
-    description: 'I have a small bug in my React project where a state is not updating correctly. Need a fresh pair of eyes to help me figure it out. The codebase is small.',
+    description:
+      'I have a small bug in my React project where a state is not updating correctly. Need a fresh pair of eyes to help me figure it out. The codebase is small.',
     budget: 120,
     tags: ['React', 'JavaScript', 'Debugging'],
     user: users.user3,
@@ -148,7 +158,8 @@ export const requestsData: Request[] = [
   {
     id: 3,
     title: 'Proofread my 5-page essay',
-    description: 'I need someone to proofread my sociology essay for grammar, spelling, and punctuation errors. It is about 1500 words long. Quick turnaround needed.',
+    description:
+      'I need someone to proofread my sociology essay for grammar, spelling, and punctuation errors. It is about 1500 words long. Quick turnaround needed.',
     budget: 50,
     tags: ['Proofreading', 'Editing', 'Writing'],
     user: users.user1,
@@ -159,17 +170,45 @@ export const userProfile: UserProfile = {
   name: users.currentUser.name,
   avatar: users.currentUser.avatar,
   bio: 'Computer Science student passionate about web development and design. Turning ideas into reality one line of code at a time. Here to help and collaborate!',
-  skills: ['React', 'Next.js', 'TypeScript', 'Node.js', 'Figma', 'UI/UX Design'],
+  skills: [
+    'React',
+    'Next.js',
+    'TypeScript',
+    'Node.js',
+    'Figma',
+    'UI/UX Design',
+  ],
   completedTasks: [
     { id: 1, title: 'Designed a resume', date: '2024-05-20' },
     { id: 2, title: 'Helped debug a Python script', date: '2024-05-18' },
     { id: 3, title: 'Wrote blog post on AI', date: '2024-05-15' },
   ],
   reviews: [
-    { id: 1, user: users.user1, rating: 5, comment: 'Amazing work! Delivered a fantastic design ahead of schedule.' },
-    { id: 2, user: users.user2, rating: 5, comment: 'Super helpful and patient. Found the bug that I was stuck on for hours.' },
-    { id: 3, user: users.user3, rating: 4, comment: 'Good writing, but took a bit longer than expected.' },
-    { id: 4, user: users.user4, rating: 5, comment: 'Very professional and a pleasure to work with.' },
+    {
+      id: 1,
+      user: users.user1,
+      rating: 5,
+      comment: 'Amazing work! Delivered a fantastic design ahead of schedule.',
+    },
+    {
+      id: 2,
+      user: users.user2,
+      rating: 5,
+      comment:
+        'Super helpful and patient. Found the bug that I was stuck on for hours.',
+    },
+    {
+      id: 3,
+      user: users.user3,
+      rating: 4,
+      comment: 'Good writing, but took a bit longer than expected.',
+    },
+    {
+      id: 4,
+      user: users.user4,
+      rating: 5,
+      comment: 'Very professional and a pleasure to work with.',
+    },
   ],
 };
 
@@ -181,10 +220,30 @@ export const conversationsData: Conversation[] = [
     lastMessageTime: '2h ago',
     unreadCount: 2,
     messages: [
-      { id: 1, text: 'Hey! I saw your offer for resume design. Are you available?', isSender: false, timestamp: '10:00 AM' },
-      { id: 2, text: 'Hi! Yes, I am. What do you have in mind?', isSender: true, timestamp: '10:01 AM' },
-      { id: 3, text: 'Great! I need a one-page modern resume. I can send you my details.', isSender: false, timestamp: '10:02 AM' },
-      { id: 4, text: 'Sure, I can have it ready by tomorrow evening.', isSender: true, timestamp: '10:03 AM' },
+      {
+        id: 1,
+        text: 'Hey! I saw your offer for resume design. Are you available?',
+        isSender: false,
+        timestamp: '10:00 AM',
+      },
+      {
+        id: 2,
+        text: 'Hi! Yes, I am. What do you have in mind?',
+        isSender: true,
+        timestamp: '10:01 AM',
+      },
+      {
+        id: 3,
+        text: 'Great! I need a one-page modern resume. I can send you my details.',
+        isSender: false,
+        timestamp: '10:02 AM',
+      },
+      {
+        id: 4,
+        text: 'Sure, I can have it ready by tomorrow evening.',
+        isSender: true,
+        timestamp: '10:03 AM',
+      },
     ],
   },
   {
@@ -193,10 +252,30 @@ export const conversationsData: Conversation[] = [
     lastMessage: 'Got it. I will take a look now.',
     lastMessageTime: '1d ago',
     messages: [
-      { id: 1, text: 'Hello, I need help with a React bug.', isSender: false, timestamp: 'Yesterday' },
-      { id: 2, text: 'Can you share the repository link?', isSender: true, timestamp: 'Yesterday' },
-       { id: 3, text: 'Yes, here it is: github.com/example/repo', isSender: false, timestamp: 'Yesterday' },
-       { id: 4, text: 'Got it. I will take a look now.', isSender: true, timestamp: 'Yesterday' },
+      {
+        id: 1,
+        text: 'Hello, I need help with a React bug.',
+        isSender: false,
+        timestamp: 'Yesterday',
+      },
+      {
+        id: 2,
+        text: 'Can you share the repository link?',
+        isSender: true,
+        timestamp: 'Yesterday',
+      },
+      {
+        id: 3,
+        text: 'Yes, here it is: github.com/example/repo',
+        isSender: false,
+        timestamp: 'Yesterday',
+      },
+      {
+        id: 4,
+        text: 'Got it. I will take a look now.',
+        isSender: true,
+        timestamp: 'Yesterday',
+      },
     ],
   },
   {
@@ -205,8 +284,18 @@ export const conversationsData: Conversation[] = [
     lastMessage: 'You: Thanks for the feedback!',
     lastMessageTime: '3d ago',
     messages: [
-      {id: 1, text: 'The blog post is live. Thanks for your work!', isSender: false, timestamp: '3d ago'},
-      {id: 2, text: 'Thanks for the feedback!', isSender: true, timestamp: '3d ago'},
+      {
+        id: 1,
+        text: 'The blog post is live. Thanks for your work!',
+        isSender: false,
+        timestamp: '3d ago',
+      },
+      {
+        id: 2,
+        text: 'Thanks for the feedback!',
+        isSender: true,
+        timestamp: '3d ago',
+      },
     ],
   },
   {
@@ -215,8 +304,18 @@ export const conversationsData: Conversation[] = [
     lastMessage: 'You are welcome!',
     lastMessageTime: '4d ago',
     messages: [
-      {id: 1, text: 'Thanks for the quick translation!', isSender: false, timestamp: '4d ago'},
-      {id: 2, text: 'You are welcome!', isSender: true, timestamp: '4d ago'},
+      {
+        id: 1,
+        text: 'Thanks for the quick translation!',
+        isSender: false,
+        timestamp: '4d ago',
+      },
+      {
+        id: 2,
+        text: 'You are welcome!',
+        isSender: true,
+        timestamp: '4d ago',
+      },
     ],
   },
 ];
@@ -238,5 +337,7 @@ export const dashboardData: DashboardData = {
     { month: 'May', earnings: 900, tasks: 8 },
     { month: 'Jun', earnings: 1500, tasks: 11 },
   ],
-  recentReviews: userProfile.reviews.slice(0, 3).map(r => ({...r, name: r.user.name, avatar: r.user.avatar})),
+  recentReviews: userProfile.reviews
+    .slice(0, 3)
+    .map((r) => ({ ...r, name: r.user.name, avatar: r.user.avatar })),
 };
