@@ -8,7 +8,7 @@ const firebaseConfig = {
   storageBucket: 'studenthub-yfnf9.firebasestorage.app',
   apiKey: 'AIzaSyCdzPvOrXV_ZsIVqCQZNrDCyOonYBAoyxs',
   authDomain: 'studenthub-yfnf9.firebaseapp.com',
-  measurementId: '',
+  measurementId: 'G-7Q6E4M3V59',
   messagingSenderId: '230995809521',
 };
 
