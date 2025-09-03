@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/hooks/use-auth';
+import AuthProvider from '@/components/auth-provider';
 import AuthWrapper from '@/components/auth-wrapper';
 import { ThemeProvider } from '@/components/theme-provider';
 
