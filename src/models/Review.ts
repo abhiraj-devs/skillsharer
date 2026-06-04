@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, models, Model, Types } from 'mongoose';
 import { IUser } from './User';
 
 export interface IReview extends Document {
+    _id: Types.ObjectId;
     rating: number;
     comment: string;
     user: Types.ObjectId | IUser; // The user being reviewed

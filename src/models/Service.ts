@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, models, Model, Types } from 'mongoose';
 import { IUser } from './User';
 
 export interface IService extends Document {
+    _id: Types.ObjectId;
     title: string;
     category: string;
     price: number;

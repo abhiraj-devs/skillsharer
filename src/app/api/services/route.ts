@@ -22,8 +22,8 @@ export async function GET() {
         rating: service.rating,
         user: {
             id: service.user._id.toString(),
-            name: service.user.name,
-            avatar: service.user.avatar,
+            name: (service.user as any).name,
+            avatar: (service.user as any).avatar,
         }
     }));
 
@@ -79,8 +79,8 @@ export async function POST(request: NextRequest) {
             rating: createdService.rating,
             user: {
                 id: createdService.user._id.toString(),
-                name: createdService.user.name,
-                avatar: createdService.user.avatar,
+                name: (createdService.user as any).name,
+                avatar: (createdService.user as any).avatar,
             }
         };
 

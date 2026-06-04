@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Conversation not found' }, { status: 404 });
         }
 
-        if (!conversation.participants.some(p => p.equals(senderId))) {
+        if (!conversation.participants.some((p: any) => (p._id ? p._id.toString() : p.toString()) === senderId.toString())) {
              return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 

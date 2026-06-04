@@ -78,8 +78,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             tags: updatedRequest.tags,
             user: {
                 id: updatedRequest.user._id.toString(),
-                name: updatedRequest.user.name,
-                avatar: updatedRequest.user.avatar,
+                name: (updatedRequest.user as any).name,
+                avatar: (updatedRequest.user as any).avatar,
             },
         };
 

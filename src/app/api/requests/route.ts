@@ -25,8 +25,8 @@ export async function GET() {
               tags: request.tags,
               user: {
                   id: request.user._id.toString(),
-                  name: request.user.name,
-                  avatar: request.user.avatar,
+                  name: (request.user as any).name,
+                  avatar: (request.user as any).avatar,
               },
             };
           });
@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
             tags: createdRequest.tags,
             user: {
                 id: createdRequest.user._id.toString(),
-                name: createdRequest.user.name,
-                avatar: createdRequest.user.avatar,
+                name: (createdRequest.user as any).name,
+                avatar: (createdRequest.user as any).avatar,
             },
         };
 

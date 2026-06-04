@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, models, Model, Types } from 'mongoose';
 import { IUser } from './User';
 
 export interface IRequest extends Document {
+    _id: Types.ObjectId;
     title: string;
     description: string;
     budget: number;

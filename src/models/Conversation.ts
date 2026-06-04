@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, models, Model, Types } from 'mongoose';
 import { IUser } from './User';
 
 export interface IMessage extends Document {
+    _id: Types.ObjectId;
     text: string;
     sender: Types.ObjectId | IUser;
     timestamp: Date;
@@ -15,6 +16,7 @@ const MessageSchema: Schema<IMessage> = new Schema({
 });
 
 export interface IConversation extends Document {
+    _id: Types.ObjectId;
     participants: (Types.ObjectId | IUser)[];
     messages: IMessage[];
 }

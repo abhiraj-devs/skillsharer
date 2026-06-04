@@ -172,7 +172,7 @@ export default function UserProfilePage() {
             <CardContent className="p-6 flex flex-col items-center text-center">
               <Avatar className="h-24 w-24 mb-4">
                  <AvatarImage
-                  src={profileUser.image || `https://avatar.vercel.sh/${profileUser.email}`}
+                  src={(profileUser as any).avatar || `https://avatar.vercel.sh/${profileUser.email}`}
                   alt={profileUser.name || ''}
                   data-ai-hint="person"
                 />
